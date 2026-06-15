@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maritime Daily Digest</title>
+<style>
+  :root{
+    --h1:#1F4E79; --h2:#2E75B6; --link:#0563C1; --ink:#1a2230; --muted:#6b7689;
+    --line:#e4e8ef; --bg:#f5f7fa; --card:#ffffff; --chip:#eef3f9; --accent:#1F4E79;
+    --acc-red:#b3261e;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:"Malgun Gothic","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;
+    color:var(--ink);background:var(--bg);line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{color:var(--link);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* Header */
+  header{position:sticky;top:0;z-index:50;background:linear-gradient(135deg,#1F4E79,#2E75B6);
+    color:#fff;box-shadow:0 2px 10px rgba(31,78,121,.18)}
+  .bar{max-width:1180px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .brand{display:flex;flex-direction:column;line-height:1.15}
+  .brand b{font-size:20px;letter-spacing:.2px}
+  .brand span{font-size:12px;opacity:.85}
+  .spacer{flex:1}
+  .ctrl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  select,.toggle button,#search{font-family:inherit;font-size:13px}
+  select{padding:7px 10px;border-radius:8px;border:none;background:#ffffff;color:var(--ink);cursor:pointer}
+  #search{padding:7px 12px;border-radius:8px;border:none;width:180px;outline:none;color:var(--ink)}
+  .toggle{display:inline-flex;background:rgba(255,255,255,.18);border-radius:8px;overflow:hidden}
+  .toggle button{padding:7px 12px;border:none;background:transparent;color:#fff;cursor:pointer;font-weight:600}
+  .toggle button.on{background:#fff;color:var(--h1)}
+
+  /* Nav chips */
+  nav.cats{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:60px;z-index:40}
+  .cats-inner{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;gap:8px;overflow-x:auto}
+  .chip{white-space:nowrap;padding:6px 12px;border-radius:999px;background:var(--chip);color:var(--h1);
+    font-size:13px;font-weight:600;cursor:pointer;border:1px solid transparent}
+  .chip:hover{border-color:var(--h2)}
+
+  main{max-width:1180px;margin:0 auto;padding:22px 16px 60px}
+
+  /* Hero */
+  .hero{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:22px;
+    display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  .hero .big{font-size:26px;font-weight:800;color:var(--h1)}
+  .hero .sub{color:var(--muted);font-size:14px}
+  .stats{display:flex;gap:22px;margin-left:auto;flex-wrap:wrap}
+  .stat{text-align:center}
+  .stat b{display:block;font-size:24px;color:var(--h2)}
+  .stat span{font-size:12px;color:var(--muted)}
+
+  /* Section */
+  section.sec{margin-bottom:30px;scroll-margin-top:120px}
+  .sec h2{font-size:19px;color:var(--h1);border-left:5px solid var(--h2);padding-left:10px;margin:0 0 14px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 16px;
+    display:flex;flex-direction:column;transition:box-shadow .15s,transform .15s}
+  .card:hover{box-shadow:0 6px 20px rgba(31,78,121,.10);transform:translateY(-2px)}
+  .card .top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .code{font-size:11px;font-weight:700;color:#fff;background:var(--h2);padding:2px 7px;border-radius:6px}
+  .card.acc .code{background:var(--acc-red)}
+  .meta{font-size:11px;color:var(--muted);margin-left:auto}
+  .card h3{font-size:15px;margin:0 0 8px;color:var(--ink);line-height:1.4}
+  .card p{margin:0 0 8px;font-size:13.5px;color:#37425a}
+  .lab{font-weight:700;color:var(--h1)}
+  .lab.cause{color:var(--acc-red)}
+  .impl{font-size:12.5px;color:var(--muted);background:var(--chip);border-radius:8px;padding:7px 10px;margin-top:auto}
+  .src{margin-top:9px;font-size:12px;word-break:break-all}
+
+  footer{max-width:1180px;margin:0 auto;padding:18px 16px 50px;color:var(--muted);font-size:12px;text-align:center}
+  .empty{padding:60px 20px;text-align:center;color:var(--muted)}
+
+  @media (max-width:640px){
+    .grid{grid-template-columns:1fr}
+    #search{width:130px}
+    nav.cats{top:auto;position:static}
+  }
+  @media print{
+    header,nav.cats,.ctrl,.hero .stats{display:none}
+    .card{break-inside:avoid;box-shadow:none}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="brand"><b>⚓ Maritime Daily Digest</b><span>해운 일일 동향 · 11개 카테고리 × 10건</span></div>
+    <div class="spacer"></div>
+    <div class="ctrl">
+      <input id="search" type="search" placeholder="검색 / Search…" autocomplete="off">
+      <select id="dateSel" title="날짜 선택"></select>
+      <div class="toggle">
+        <button id="btnKR" class="on">KR</button>
+        <button id="btnEN">EN</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<nav class="cats"><div class="cats-inner" id="catNav"></div></nav>
+
+<main id="main">
+  <div class="empty" id="loading">불러오는 중…</div>
+</main>
+
+<footer id="foot"></footer>
+
+<script src="manifest.js"></script>
+<script>
+/* ---------- config ---------- */
+var CAT = {
+  TOP:{i:"🌐",kr:"Top News",en:"Top News"},
+  ACC:{i:"🚨",kr:"사고",en:"Accidents"},
+  PSC:{i:"🛂",kr:"PSC",en:"PSC"},
+  PCTC:{i:"🚢",kr:"PCTC",en:"PCTC"},
+  WW:{i:"🟦",kr:"Wallenius",en:"Wallenius"},
+  EE:{i:"⚡",kr:"에너지효율",en:"Energy"},
+  DIG:{i:"💻",kr:"디지털",en:"Digital"},
+  TECH:{i:"🔧",kr:"기술팀",en:"Technical"},
+  HR:{i:"👥",kr:"Marine HR",en:"Marine HR"},
+  HSEQ:{i:"🛡️",kr:"HSEQ",en:"HSEQ"},
+  KR:{i:"🇰🇷",kr:"한국해운",en:"Korea"},
+  INS:{i:"🛟",kr:"P&I·H&M 보험",en:"Insurance"}
+};
+var LBL = {
+  KR:{date:"발표/시기",sum:"주요 내용",imp:"시사점",iDate:"발생/공개",iSum:"사고 개요",cause:"추정 원인",les:"Lessons Learned",src:"출처"},
+  EN:{date:"Date/Source",sum:"Summary",imp:"Implication",iDate:"Incident Date",iSum:"Incident Summary",cause:"Probable Cause",les:"Lessons Learned",src:"Source"}
+};
+var lang = "KR";
+var current = null;
+
+/* ---------- loader (file:// friendly) ---------- */
+function loadDay(date, cb){
+  window.DIGEST_ARCHIVE = window.DIGEST_ARCHIVE || {};
+  if (window.DIGEST_ARCHIVE[date]) return cb(window.DIGEST_ARCHIVE[date]);
+  var s = document.createElement("script");
+  s.src = "digest-" + date + ".js";
+  s.onload = function(){ cb(window.DIGEST_ARCHIVE[date] || null); };
+  s.onerror = function(){ cb(null); };
+  document.head.appendChild(s);
+}
+
+function esc(t){ return (t==null?"":String(t)).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+
+/* ---------- render ---------- */
+function render(){
+  var main = document.getElementById("main");
+  var q = (document.getElementById("search").value||"").trim().toLowerCase();
+  if(!current){ main.innerHTML='<div class="empty">데이터가 없습니다.</div>'; return; }
+  var L = LBL[lang];
+  var html = "";
+
+  // hero
+  html += '<div class="hero">'
+    + '<div><div class="big">'+(lang==="KR"?current.dateKR:current.dateEN)+' <span style="font-size:14px;color:var(--muted)">(KST)</span></div>'
+    + '<div class="sub">'+(lang==="KR"?"17개 해운 매체 · MAIB 스타일 일일 브리핑":"17 maritime sources · MAIB-style daily brief")+'</div></div>'
+    + '<div class="stats"><div class="stat"><b>'+current.sections.length+'</b><span>'+(lang==="KR"?"카테고리":"categories")+'</span></div>'
+    + '<div class="stat"><b>'+current.total+'</b><span>'+(lang==="KR"?"기사":"items")+'</span></div></div></div>';
+
+  var shown = 0;
+  current.sections.forEach(function(s){
+    var items = s.items.filter(function(it){
+      if(!q) return true;
+      var hay = (it.title+" "+(it.kSum||"")+" "+(it.eSum||"")+" "+it.src+" "+it.code).toLowerCase();
+      return hay.indexOf(q) >= 0;
+    });
+    if(!items.length) return;
+    shown += items.length;
+    html += '<section class="sec" id="sec-'+s.code+'"><h2>'+(lang==="KR"?esc(s.kTitle):esc(s.eTitle))+'</h2><div class="grid">';
+    items.forEach(function(it,idx){
+      var acc = s.type==="accident";
+      html += '<div class="card'+(acc?" acc":"")+'">';
+      html += '<div class="top"><span class="code">'+esc(it.code)+'</span><span class="meta">'+esc(it.src)+' · '+esc(it.date)+'</span></div>';
+      html += '<h3>'+esc(it.title)+'</h3>';
+      if(acc){
+        html += '<p><span class="lab">'+L.iSum+':</span> '+esc(lang==="KR"?it.kSum:it.eSum)+'</p>';
+        html += '<p><span class="lab cause">'+L.cause+':</span> '+esc(lang==="KR"?it.kCause:it.eCause)+'</p>';
+        html += '<div class="impl"><b>'+L.les+':</b> '+esc(lang==="KR"?it.kLes:it.eLes)+'</div>';
+      } else {
+        html += '<p><span class="lab">'+L.sum+':</span> '+esc(lang==="KR"?it.kSum:it.eSum)+'</p>';
+        html += '<div class="impl"><b>'+L.imp+':</b> '+esc(lang==="KR"?it.kImp:it.eImp)+'</div>';
+      }
+      html += '<div class="src">🔗 <a href="'+esc(it.url)+'" target="_blank" rel="noopener">'+L.src+'</a></div>';
+      html += '</div>';
+    });
+    html += '</div></section>';
+  });
+
+  if(!shown) html += '<div class="empty">검색 결과가 없습니다. / No results.</div>';
+  main.innerHTML = html;
+}
+
+function buildNav(){
+  if(!current) return;
+  var nav = document.getElementById("catNav");
+  nav.innerHTML = current.sections.map(function(s){
+    var c = CAT[s.code]||{i:"•",kr:s.code,en:s.code};
+    return '<div class="chip" data-go="sec-'+s.code+'">'+c.i+' '+(lang==="KR"?c.kr:c.en)+'</div>';
+  }).join("");
+  Array.prototype.forEach.call(nav.querySelectorAll(".chip"),function(ch){
+    ch.onclick=function(){ var el=document.getElementById(ch.getAttribute("data-go")); if(el) el.scrollIntoView({behavior:"smooth"}); };
+  });
+}
+
+function show(date){
+  document.getElementById("main").innerHTML='<div class="empty">불러오는 중…</div>';
+  loadDay(date, function(d){
+    current = d; buildNav(); render();
+    document.getElementById("foot").innerHTML =
+      (lang==="KR"
+        ? "자동 생성 · daily-digest 플러그인 · 최종 데이터 "+date+" (KST) · 출처 링크는 원문으로 연결됩니다."
+        : "Auto-generated · daily-digest plugin · latest data "+date+" (KST) · source links open the original article.");
+  });
+}
+
+function setLang(l){
+  lang=l;
+  document.getElementById("btnKR").className = l==="KR"?"on":"";
+  document.getElementById("btnEN").className = l==="EN"?"on":"";
+  document.documentElement.lang = l==="KR"?"ko":"en";
+  buildNav(); render();
+}
+
+/* ---------- init ---------- */
+(function(){
+  var dates = window.DIGEST_MANIFEST || [];
+  var sel = document.getElementById("dateSel");
+  if(!dates.length){
+    document.getElementById("main").innerHTML='<div class="empty">아직 데이터가 없습니다. 디지에스트를 먼저 실행하세요.</div>';
+    return;
+  }
+  sel.innerHTML = dates.map(function(d,i){ return '<option value="'+d+'"'+(i===0?" selected":"")+'>'+d+(i===0?" (최신)":"")+'</option>'; }).join("");
+  sel.onchange = function(){ show(sel.value); };
+  document.getElementById("btnKR").onclick=function(){ setLang("KR"); };
+  document.getElementById("btnEN").onclick=function(){ setLang("EN"); };
+  var t; document.getElementById("search").oninput=function(){ clearTimeout(t); t=setTimeout(render,180); };
+  show(dates[0]);
+})();
+</script>
+</body>
+</html>
