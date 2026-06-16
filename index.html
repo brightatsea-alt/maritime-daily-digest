@@ -89,7 +89,7 @@
 <body>
 <header>
   <div class="bar">
-    <div class="brand"><b>⚓ Maritime Daily Digest</b><span>해운 일일 동향 · 11개 카테고리 × 10건</span></div>
+    <div class="brand"><b>⚓ Maritime Daily Digest</b><span>해운 일일 동향 · 16개 카테고리</span></div>
     <div class="spacer"></div>
     <div class="ctrl">
       <input id="search" type="search" placeholder="검색 / Search…" autocomplete="off">
@@ -110,7 +110,7 @@
 
 <footer id="foot"></footer>
 
-<script src="manifest.js"></script>
+<script src="data/manifest.js"></script>
 <script>
 /* ---------- config ---------- */
 var CAT = {
@@ -139,7 +139,7 @@ function loadDay(date, cb){
   window.DIGEST_ARCHIVE = window.DIGEST_ARCHIVE || {};
   if (window.DIGEST_ARCHIVE[date]) return cb(window.DIGEST_ARCHIVE[date]);
   var s = document.createElement("script");
-  s.src = "digest-" + date + ".js";
+  s.src = "data/digest-" + date + ".js";
   s.onload = function(){ cb(window.DIGEST_ARCHIVE[date] || null); };
   s.onerror = function(){ cb(null); };
   document.head.appendChild(s);
@@ -158,7 +158,7 @@ function render(){
   // hero
   html += '<div class="hero">'
     + '<div><div class="big">'+(lang==="KR"?current.dateKR:current.dateEN)+' <span style="font-size:14px;color:var(--muted)">(KST)</span></div>'
-    + '<div class="sub">'+(lang==="KR"?"17개 해운 매체 · MAIB 스타일 일일 브리핑":"17 maritime sources · MAIB-style daily brief")+'</div></div>'
+    + '</div>'
     + '<div class="stats"><div class="stat"><b>'+current.sections.length+'</b><span>'+(lang==="KR"?"카테고리":"categories")+'</span></div>'
     + '<div class="stat"><b>'+current.total+'</b><span>'+(lang==="KR"?"기사":"items")+'</span></div></div></div>';
 
@@ -244,3 +244,4 @@ function setLang(l){
 </script>
 </body>
 </html>
+                                                                                                                                                          
