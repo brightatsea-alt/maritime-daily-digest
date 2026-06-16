@@ -110,7 +110,7 @@
 
 <footer id="foot"></footer>
 
-<script src="data/manifest.js"></script>
+<script src="manifest.js"></script>
 <script>
 /* ---------- config ---------- */
 var CAT = {
@@ -139,7 +139,7 @@ function loadDay(date, cb){
   window.DIGEST_ARCHIVE = window.DIGEST_ARCHIVE || {};
   if (window.DIGEST_ARCHIVE[date]) return cb(window.DIGEST_ARCHIVE[date]);
   var s = document.createElement("script");
-  s.src = "data/digest-" + date + ".js";
+  s.src = "digest-" + date + ".js";
   s.onload = function(){ cb(window.DIGEST_ARCHIVE[date] || null); };
   s.onerror = function(){ cb(null); };
   document.head.appendChild(s);
@@ -244,4 +244,4 @@ function setLang(l){
 </script>
 </body>
 </html>
-                                                                                                                                                          
+                                                                                                                                                                    
