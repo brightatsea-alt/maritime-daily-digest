@@ -35,7 +35,7 @@
 
   /* Nav chips */
   nav.cats{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:60px;z-index:40}
-  .cats-inner{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;gap:8px;overflow-x:auto}
+  .cats-inner{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;flex-wrap:wrap;gap:8px;max-height:32vh;overflow-y:auto}
   .chip{white-space:nowrap;padding:6px 12px;border-radius:999px;background:var(--chip);color:var(--h1);
     font-size:13px;font-weight:600;cursor:pointer;border:1px solid transparent}
   .chip:hover{border-color:var(--h2)}
@@ -125,7 +125,12 @@ var CAT = {
   HR:{i:"👥",kr:"Marine HR",en:"Marine HR"},
   HSEQ:{i:"🛡️",kr:"HSEQ",en:"HSEQ"},
   KR:{i:"🇰🇷",kr:"한국해운",en:"Korea"},
-  INS:{i:"🛟",kr:"P&I·H&M 보험",en:"Insurance"}
+  INS:{i:"🛟",kr:"P&I·H&M 보험",en:"Insurance"},
+  VET:{i:"✅",kr:"Vetting",en:"Vetting"},
+  CLASS:{i:"🏛️",kr:"선급",en:"Class"},
+  COMM:{i:"💰",kr:"커머셜·용선",en:"Commercial"},
+  GEO:{i:"🗺️",kr:"지리이슈",en:"Geo Issue"},
+  TW:{i:"📰",kr:"TradeWinds",en:"TradeWinds"}
 };
 var LBL = {
   KR:{date:"발표/시기",sum:"주요 내용",imp:"시사점",iDate:"발생/공개",iSum:"사고 개요",cause:"추정 원인",les:"Lessons Learned",src:"출처"},
@@ -236,12 +241,4 @@ function setLang(l){
   }
   sel.innerHTML = dates.map(function(d,i){ return '<option value="'+d+'"'+(i===0?" selected":"")+'>'+d+(i===0?" (최신)":"")+'</option>'; }).join("");
   sel.onchange = function(){ show(sel.value); };
-  document.getElementById("btnKR").onclick=function(){ setLang("KR"); };
-  document.getElementById("btnEN").onclick=function(){ setLang("EN"); };
-  var t; document.getElementById("search").oninput=function(){ clearTimeout(t); t=setTimeout(render,180); };
-  show(dates[0]);
-})();
-</script>
-</body>
-</html>
-                                                                                                                                                                    
+  document.getElementById("btnKR")
