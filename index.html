@@ -241,4 +241,11 @@ function setLang(l){
   }
   sel.innerHTML = dates.map(function(d,i){ return '<option value="'+d+'"'+(i===0?" selected":"")+'>'+d+(i===0?" (최신)":"")+'</option>'; }).join("");
   sel.onchange = function(){ show(sel.value); };
-  document.getElementById("btnKR")
+  document.getElementById("btnKR").onclick=function(){ setLang("KR"); };
+  document.getElementById("btnEN").onclick=function(){ setLang("EN"); };
+  var t; document.getElementById("search").oninput=function(){ clearTimeout(t); t=setTimeout(render,180); };
+  show(dates[0]);
+})();
+</script>
+</body>
+</html>
