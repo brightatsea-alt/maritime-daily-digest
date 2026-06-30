@@ -126,6 +126,7 @@ var CAT = {
   HSEQ:{i:"🛡️",kr:"HSEQ",en:"HSEQ"},
   KR:{i:"🇰🇷",kr:"한국해운",en:"Korea"},
   INS:{i:"🛟",kr:"P&I·H&M 보험",en:"Insurance"},
+  PNI:{i:"⚓",kr:"P&I 클럽",en:"P&I Clubs"},
   VET:{i:"✅",kr:"Vetting",en:"Vetting"},
   CLASS:{i:"🏛️",kr:"선급",en:"Class"},
   COMM:{i:"💰",kr:"커머셜·용선",en:"Commercial"},
@@ -172,7 +173,7 @@ function render(){
   current.sections.forEach(function(s){
     var items = s.items.filter(function(it){
       if(!q) return true;
-      var hay = (it.title+" "+(it.eTitle||"")+" "+(it.kSum||"")+" "+(it.eSum||"")+" "+it.src+" "+it.code).toLowerCase();
+      var hay = (it.title+" "+(it.kSum||"")+" "+(it.eSum||"")+" "+it.src+" "+it.code).toLowerCase();
       return hay.indexOf(q) >= 0;
     });
     if(!items.length) return;
@@ -181,9 +182,9 @@ function render(){
     items.forEach(function(it,idx){
       var acc = s.type==="accident";
       var showSum = (lang==="KR") || !!it.eTitle;
-      var ttl = (lang==="KR") ? it.title : (it.eTitle || (it.eSum ? String(it.eSum).replace(/\s*\.\s*$/,"") : it.title));
       html += '<div class="card'+(acc?" acc":"")+'">';
       html += '<div class="top"><span class="code">'+esc(it.code)+'</span><span class="meta">'+esc(it.src)+' · '+esc(it.date)+'</span></div>';
+      var ttl = (lang==="KR") ? it.title : (it.eTitle || (it.eSum ? String(it.eSum).replace(/\s*\.\s*$/,"") : it.title));
       html += '<h3>'+esc(ttl)+'</h3>';
       if(acc){
         if(showSum) html += '<p><span class="lab">'+L.iSum+':</span> '+esc(lang==="KR"?it.kSum:it.eSum)+'</p>';
@@ -247,8 +248,4 @@ function setLang(l){
   document.getElementById("btnKR").onclick=function(){ setLang("KR"); };
   document.getElementById("btnEN").onclick=function(){ setLang("EN"); };
   var t; document.getElementById("search").oninput=function(){ clearTimeout(t); t=setTimeout(render,180); };
-  show(dates[0]);
-})();
-</script>
-</body>
-</html>
+  
