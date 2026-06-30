@@ -110,7 +110,7 @@
 
 <footer id="foot"></footer>
 
-<script src="manifest.js"></script>
+<script src="data/manifest.js"></script>
 <script>
 /* ---------- config ---------- */
 var CAT = {
@@ -145,7 +145,7 @@ function loadDay(date, cb){
   window.DIGEST_ARCHIVE = window.DIGEST_ARCHIVE || {};
   if (window.DIGEST_ARCHIVE[date]) return cb(window.DIGEST_ARCHIVE[date]);
   var s = document.createElement("script");
-  s.src = "digest-" + date + ".js";
+  s.src = "data/digest-" + date + ".js";
   s.onload = function(){ cb(window.DIGEST_ARCHIVE[date] || null); };
   s.onerror = function(){ cb(null); };
   document.head.appendChild(s);
@@ -172,7 +172,7 @@ function render(){
   current.sections.forEach(function(s){
     var items = s.items.filter(function(it){
       if(!q) return true;
-      var hay = (it.title+" "+(it.kSum||"")+" "+(it.eSum||"")+" "+it.src+" "+it.code).toLowerCase();
+      var hay = (it.title+" "+(it.eTitle||"")+" "+(it.kSum||"")+" "+(it.eSum||"")+" "+it.src+" "+it.code).toLowerCase();
       return hay.indexOf(q) >= 0;
     });
     if(!items.length) return;
@@ -180,15 +180,17 @@ function render(){
     html += '<section class="sec" id="sec-'+s.code+'"><h2>'+(lang==="KR"?esc(s.kTitle):esc(s.eTitle))+'</h2><div class="grid">';
     items.forEach(function(it,idx){
       var acc = s.type==="accident";
+      var showSum = (lang==="KR") || !!it.eTitle;
+      var ttl = (lang==="KR") ? it.title : (it.eTitle || (it.eSum ? String(it.eSum).replace(/\s*\.\s*$/,"") : it.title));
       html += '<div class="card'+(acc?" acc":"")+'">';
       html += '<div class="top"><span class="code">'+esc(it.code)+'</span><span class="meta">'+esc(it.src)+' · '+esc(it.date)+'</span></div>';
-      html += '<h3>'+esc(it.title)+'</h3>';
+      html += '<h3>'+esc(ttl)+'</h3>';
       if(acc){
-        html += '<p><span class="lab">'+L.iSum+':</span> '+esc(lang==="KR"?it.kSum:it.eSum)+'</p>';
+        if(showSum) html += '<p><span class="lab">'+L.iSum+':</span> '+esc(lang==="KR"?it.kSum:it.eSum)+'</p>';
         html += '<p><span class="lab cause">'+L.cause+':</span> '+esc(lang==="KR"?it.kCause:it.eCause)+'</p>';
         html += '<div class="impl"><b>'+L.les+':</b> '+esc(lang==="KR"?it.kLes:it.eLes)+'</div>';
       } else {
-        html += '<p><span class="lab">'+L.sum+':</span> '+esc(lang==="KR"?it.kSum:it.eSum)+'</p>';
+        if(showSum) html += '<p><span class="lab">'+L.sum+':</span> '+esc(lang==="KR"?it.kSum:it.eSum)+'</p>';
         html += '<div class="impl"><b>'+L.imp+':</b> '+esc(lang==="KR"?it.kImp:it.eImp)+'</div>';
       }
       html += '<div class="src">🔗 <a href="'+esc(it.url)+'" target="_blank" rel="noopener">'+L.src+'</a></div>';
