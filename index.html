@@ -106,8 +106,8 @@
     <div class="ctrl">
       <input id="search" type="search" placeholder="검색 / Search…" autocomplete="off">
       <select id="dateSel" title="날짜 선택"></select>
-      <div class="langwrap" title="KR: 출처 링크를 한글 번역으로 열기 · EN: 원문 그대로 열기">
-        <span class="lng-ico">🌐 언어·출처번역</span>
+      <div class="langwrap" title="카드 내용 언어 전환 (KR=한국어 / EN=English). 출처는 원문으로 열립니다.">
+        <span class="lng-ico">🌐 언어 / Language</span>
         <div class="toggle attn" id="langToggle">
           <button id="btnKR" class="on">KR</button>
           <button id="btnEN">EN</button>
@@ -183,7 +183,7 @@ function transUrl(u){
     return a.protocol+"//"+ph+a.pathname+a.search+sep+"_x_tr_sl=auto&_x_tr_tl=ko&_x_tr_hl=ko"+(a.hash||"");
   }catch(e){ return u; }
 }
-function srcTranslated(it){ return lang==="KR" && !isKoreanSource(it); }
+function srcTranslated(it){ return false; } /* page-translate proxies are region-blocked in KR; open original */
 function srcUrl(it){ return srcTranslated(it) ? transUrl(it.url) : it.url; }
 
 /* ---------- render ---------- */
@@ -254,8 +254,8 @@ function show(date){
     current = d; buildNav(); render();
     document.getElementById("foot").innerHTML =
       (lang==="KR"
-        ? "자동 생성 · daily-digest 플러그인 · 최종 데이터 "+date+" (KST) · 출처 링크: KR=한글 번역(구글) / EN=원문."
-        : "Auto-generated · daily-digest plugin · latest data "+date+" (KST) · source links: KR=Korean (Google Translate) / EN=original.");
+        ? "자동 생성 · daily-digest 플러그인 · 최종 데이터 "+date+" (KST) · 출처는 원문으로 연결됩니다(브라우저 번역 기능 이용 가능)."
+        : "Auto-generated · daily-digest plugin · latest data "+date+" (KST) · source links open the original article.");
   });
 }
 
