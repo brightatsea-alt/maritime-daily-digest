@@ -29,22 +29,9 @@
   select,.toggle button,#search{font-family:inherit;font-size:13px}
   select{padding:7px 10px;border-radius:8px;border:none;background:#ffffff;color:var(--ink);cursor:pointer}
   #search{padding:7px 12px;border-radius:8px;border:none;width:180px;outline:none;color:var(--ink)}
-  /* Language toggle — emphasized */
-  .langwrap{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);
-    padding:4px 6px 4px 10px;border-radius:12px}
-  .langwrap .lng-ico{font-size:12px;font-weight:700;color:#fff;opacity:.95;white-space:nowrap}
-  .toggle{display:inline-flex;background:rgba(0,0,0,.20);border-radius:9px;overflow:hidden;
-    border:2px solid #ffd34d;box-shadow:0 0 0 3px rgba(255,211,77,.30)}
-  .toggle button{padding:8px 16px;border:none;background:transparent;color:#fff;cursor:pointer;
-    font-weight:700;font-size:14px;letter-spacing:.3px;transition:background .15s,color .15s}
-  .toggle button.on{background:#ffd34d;color:#1F4E79;box-shadow:0 1px 6px rgba(0,0,0,.25)}
-  .toggle button:not(.on):hover{background:rgba(255,255,255,.16)}
-  @keyframes lngpulse{0%,100%{box-shadow:0 0 0 3px rgba(255,211,77,.30)}
-    50%{box-shadow:0 0 0 7px rgba(255,211,77,.55)}}
-  .toggle.attn{animation:lngpulse 1.3s ease-in-out 4}
-  .trbadge{display:inline-block;font-size:10.5px;color:#1a6b3a;background:#d8f3e3;border:1px solid #9fe0bd;
-    border-radius:6px;padding:1px 7px;margin-left:5px;font-weight:700;white-space:nowrap;text-decoration:none;cursor:pointer}
-  .trbadge:hover{background:#bdebd1;text-decoration:none}
+  .toggle{display:inline-flex;background:rgba(255,255,255,.18);border-radius:8px;overflow:hidden}
+  .toggle button{padding:7px 12px;border:none;background:transparent;color:#fff;cursor:pointer;font-weight:600}
+  .toggle button.on{background:#fff;color:var(--h1)}
 
   /* Nav chips */
   nav.cats{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:60px;z-index:40}
@@ -83,7 +70,6 @@
   .lab.cause{color:var(--acc-red)}
   .impl{font-size:12.5px;color:var(--muted);background:var(--chip);border-radius:8px;padding:7px 10px;margin-top:auto}
   .src{margin-top:9px;font-size:12px;word-break:break-all}
-  .origlink{color:var(--muted);font-weight:600}
 
   footer{max-width:1180px;margin:0 auto;padding:18px 16px 50px;color:var(--muted);font-size:12px;text-align:center}
   .empty{padding:60px 20px;text-align:center;color:var(--muted)}
@@ -108,12 +94,9 @@
     <div class="ctrl">
       <input id="search" type="search" placeholder="검색 / Search…" autocomplete="off">
       <select id="dateSel" title="날짜 선택"></select>
-      <div class="langwrap" title="KR=한국어 카드 + 출처에 '크롬 번역' 안내 표시 · EN=English 카드. 출처는 항상 원문으로 열립니다.">
-        <span class="lng-ico">🌐 언어 / Language</span>
-        <div class="toggle attn" id="langToggle">
-          <button id="btnKR" class="on">KR</button>
-          <button id="btnEN">EN</button>
-        </div>
+      <div class="toggle">
+        <button id="btnKR" class="on">KR</button>
+        <button id="btnEN">EN</button>
       </div>
     </div>
   </div>
@@ -171,31 +154,6 @@ function loadDay(date, cb){
 
 function esc(t){ return (t==null?"":String(t)).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
 
-/* ---------- source-link translation (KR toggle => Google Translate proxy to Korean) ---------- */
-var KO_HOST=/(^|\.)(ksg\.co\.kr|shippingnewsnet\.com|theguru\.co\.kr|finomy\.com|enetnews\.co\.kr|ceoscoredaily\.com|maritimepress\.co\.kr|kobc\.or\.kr|busanpa\.com)$/i;
-function isKoreanSource(it){
-  if(it && it.code==="KR") return true;
-  try{ var a=document.createElement("a"); a.href=it.url; return KO_HOST.test(a.hostname); }catch(e){ return false; }
-}
-function transUrl(u){
-  try{
-    var a=document.createElement("a"); a.href=u;
-    var ph=a.hostname.replace(/-/g,"--").replace(/\./g,"-")+".translate.goog";
-    var sep=a.search?"&":"?";
-    return a.protocol+"//"+ph+a.pathname+a.search+sep+"_x_tr_sl=auto&_x_tr_tl=ko&_x_tr_hl=ko"+(a.hash||"");
-  }catch(e){ return u; }
-}
-function srcTranslated(it){ return lang==="KR" && !isKoreanSource(it); } /* KR: show Chrome-translate hint (page proxies are region-blocked) */
-function srcUrl(it){ return it.url; } /* always original */
-function papagoUrl(it){ return "https://papago.naver.net/website?locale=ko&source=en&target=ko&url="+encodeURIComponent(it.url); }
-function srcHtml(it){
-  var lbl=(lang==="KR")?"출처":"Source";
-  if(srcTranslated(it)){
-    return '🔗 <a href="'+esc(papagoUrl(it))+'" target="_blank" rel="noopener" title="파파고 웹 번역(한글)으로 열기 · 임베드 차단/유료 사이트는 안 될 수 있어요">'+lbl+'(한글)</a> · <a class="origlink" href="'+esc(it.url)+'" target="_blank" rel="noopener" title="원문(영문)">원문</a>';
-  }
-  return '🔗 <a href="'+esc(it.url)+'" target="_blank" rel="noopener">'+lbl+'</a>';
-}
-
 /* ---------- render ---------- */
 function render(){
   var main = document.getElementById("main");
@@ -204,7 +162,6 @@ function render(){
   var L = LBL[lang];
   var html = "";
 
-  // hero
   html += '<div class="hero">'
     + '<div><div class="big">'+(lang==="KR"?current.dateKR:current.dateEN)+' <span style="font-size:14px;color:var(--muted)">(KST)</span></div>'
     + '</div>'
@@ -236,7 +193,7 @@ function render(){
         if(showSum) html += '<p><span class="lab">'+L.sum+':</span> '+esc(lang==="KR"?it.kSum:it.eSum)+'</p>';
         html += '<div class="impl"><b>'+L.imp+':</b> '+esc(lang==="KR"?it.kImp:it.eImp)+'</div>';
       }
-      html += '<div class="src">'+srcHtml(it)+'</div>';
+      html += '<div class="src">🔗 <a href="'+esc(it.url)+'" target="_blank" rel="noopener">'+L.src+'</a></div>';
       html += '</div>';
     });
     html += '</div></section>';
@@ -264,7 +221,7 @@ function show(date){
     current = d; buildNav(); render();
     document.getElementById("foot").innerHTML =
       (lang==="KR"
-        ? "자동 생성 · daily-digest 플러그인 · 최종 데이터 "+date+" (KST) · 출처는 원문으로 연결됩니다(브라우저 번역 기능 이용 가능)."
+        ? "자동 생성 · daily-digest 플러그인 · 최종 데이터 "+date+" (KST) · 출처 링크는 원문으로 연결됩니다."
         : "Auto-generated · daily-digest plugin · latest data "+date+" (KST) · source links open the original article.");
   });
 }
@@ -274,7 +231,6 @@ function setLang(l){
   document.getElementById("btnKR").className = l==="KR"?"on":"";
   document.getElementById("btnEN").className = l==="EN"?"on":"";
   document.documentElement.lang = l==="KR"?"ko":"en";
-  var tg=document.getElementById("langToggle"); if(tg) tg.classList.remove("attn");
   buildNav(); render();
 }
 
