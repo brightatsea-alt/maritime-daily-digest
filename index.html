@@ -43,7 +43,7 @@
     50%{box-shadow:0 0 0 7px rgba(255,211,77,.55)}}
   .toggle.attn{animation:lngpulse 1.3s ease-in-out 4}
   .trbadge{font-size:10.5px;color:#7a5a00;background:#ffe9a8;border-radius:6px;padding:1px 6px;
-    margin-left:5px;font-weight:700;white-space:nowrap}
+    margin-left:5px;font-weight:700;white-space:nowrap;cursor:help}
 
   /* Nav chips */
   nav.cats{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:60px;z-index:40}
@@ -106,7 +106,7 @@
     <div class="ctrl">
       <input id="search" type="search" placeholder="검색 / Search…" autocomplete="off">
       <select id="dateSel" title="날짜 선택"></select>
-      <div class="langwrap" title="카드 내용 언어 전환 (KR=한국어 / EN=English). 출처는 원문으로 열립니다.">
+      <div class="langwrap" title="KR=한국어 카드 + 출처에 '크롬 번역' 안내 표시 · EN=English 카드. 출처는 항상 원문으로 열립니다.">
         <span class="lng-ico">🌐 언어 / Language</span>
         <div class="toggle attn" id="langToggle">
           <button id="btnKR" class="on">KR</button>
@@ -183,8 +183,8 @@ function transUrl(u){
     return a.protocol+"//"+ph+a.pathname+a.search+sep+"_x_tr_sl=auto&_x_tr_tl=ko&_x_tr_hl=ko"+(a.hash||"");
   }catch(e){ return u; }
 }
-function srcTranslated(it){ return false; } /* page-translate proxies are region-blocked in KR; open original */
-function srcUrl(it){ return srcTranslated(it) ? transUrl(it.url) : it.url; }
+function srcTranslated(it){ return lang==="KR" && !isKoreanSource(it); } /* KR: show Chrome-translate hint (page proxies are region-blocked) */
+function srcUrl(it){ return it.url; } /* always original; user translates opened page via Chrome */
 
 /* ---------- render ---------- */
 function render(){
@@ -226,7 +226,7 @@ function render(){
         if(showSum) html += '<p><span class="lab">'+L.sum+':</span> '+esc(lang==="KR"?it.kSum:it.eSum)+'</p>';
         html += '<div class="impl"><b>'+L.imp+':</b> '+esc(lang==="KR"?it.kImp:it.eImp)+'</div>';
       }
-      html += '<div class="src">🔗 <a href="'+esc(srcUrl(it))+'" target="_blank" rel="noopener">'+L.src+'</a>'+(srcTranslated(it)?' <span class="trbadge">🌐 한글</span>':'')+'</div>';
+      html += '<div class="src">🔗 <a href="'+esc(srcUrl(it))+'" target="_blank" rel="noopener">'+L.src+'</a>'+(srcTranslated(it)?' <span class="trbadge" title="원문이 열리면 크롬에서 빈 곳을 우클릭 → 한국어로 번역 (또는 주소창 번역 아이콘) 을 누르세요">🌐 크롬 번역</span>':'')+'</div>';
       html += '</div>';
     });
     html += '</div></section>';
