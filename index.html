@@ -29,7 +29,6 @@
   select,.toggle button,#search{font-family:inherit;font-size:13px}
   select{padding:7px 10px;border-radius:8px;border:none;background:#ffffff;color:var(--ink);cursor:pointer}
   #search{padding:7px 12px;border-radius:8px;border:none;width:180px;outline:none;color:var(--ink)}
-  /* Language toggle — emphasized */
   .langwrap{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);
     padding:4px 6px 4px 10px;border-radius:12px}
   .langwrap .lng-ico{font-size:12px;font-weight:700;color:#fff;opacity:.95;white-space:nowrap}
@@ -39,22 +38,16 @@
     font-weight:700;font-size:14px;letter-spacing:.3px;transition:background .15s,color .15s}
   .toggle button.on{background:#ffd34d;color:#1F4E79;box-shadow:0 1px 6px rgba(0,0,0,.25)}
   .toggle button:not(.on):hover{background:rgba(255,255,255,.16)}
-  @keyframes lngpulse{0%,100%{box-shadow:0 0 0 3px rgba(255,211,77,.30)}
-    50%{box-shadow:0 0 0 7px rgba(255,211,77,.55)}}
-  .toggle.attn{animation:lngpulse 1.3s ease-in-out 4}
-  .trbadge{font-size:10.5px;color:#7a5a00;background:#ffe9a8;border-radius:6px;padding:1px 6px;
-    margin-left:5px;font-weight:700;white-space:nowrap}
 
-  /* Nav chips */
+  /* Nav chips — max 2 lines */
   nav.cats{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:60px;z-index:40}
-  .cats-inner{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;flex-wrap:wrap;gap:8px;max-height:32vh;overflow-y:auto}
-  .chip{white-space:nowrap;padding:6px 12px;border-radius:999px;background:var(--chip);color:var(--h1);
-    font-size:13px;font-weight:600;cursor:pointer;border:1px solid transparent}
+  .cats-inner{max-width:1180px;margin:0 auto;padding:8px 16px;display:flex;flex-wrap:wrap;gap:7px;max-height:82px;overflow-y:auto}
+  .chip{white-space:nowrap;padding:5px 10px;border-radius:999px;background:var(--chip);color:var(--h1);
+    font-size:12.5px;font-weight:600;cursor:pointer;border:1px solid transparent}
   .chip:hover{border-color:var(--h2)}
 
   main{max-width:1180px;margin:0 auto;padding:22px 16px 60px}
 
-  /* Hero */
   .hero{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:22px;
     display:flex;align-items:center;gap:20px;flex-wrap:wrap}
   .hero .big{font-size:26px;font-weight:800;color:var(--h1)}
@@ -64,7 +57,6 @@
   .stat b{display:block;font-size:24px;color:var(--h2)}
   .stat span{font-size:12px;color:var(--muted)}
 
-  /* Section */
   section.sec{margin-bottom:30px;scroll-margin-top:120px}
   .sec h2{font-size:19px;color:var(--h1);border-left:5px solid var(--h2);padding-left:10px;margin:0 0 14px}
   .sec h2 .viewall{font-size:11.5px;font-weight:700;color:#fff;background:var(--h2);border:none;
@@ -112,9 +104,9 @@
     <div class="ctrl">
       <input id="search" type="search" placeholder="검색 / Search…" autocomplete="off">
       <select id="dateSel" title="날짜 선택"></select>
-      <div class="langwrap" title="KR: 출처 링크를 한글 번역으로 열기 · EN: 원문 그대로 열기">
-        <span class="lng-ico">🌐 언어·출처번역</span>
-        <div class="toggle attn" id="langToggle">
+      <div class="langwrap" title="KR / EN 표시 언어 전환">
+        <span class="lng-ico">🌐 언어</span>
+        <div class="toggle" id="langToggle">
           <button id="btnKR" class="on">KR</button>
           <button id="btnEN">EN</button>
         </div>
@@ -164,10 +156,10 @@ var LBL = {
 var lang = "KR";
 var current = null;
 var viewMode = "day";   // "day" | "all"
-var allCode = null;     // section code being shown in all-mode
-var allItems = [];      // aggregated items for allCode (date ascending)
+var allCode = null;
+var allItems = [];
 
-/* ---------- loader (file:// friendly) ---------- */
+/* ---------- loader ---------- */
 function loadDay(date, cb){
   window.DIGEST_ARCHIVE = window.DIGEST_ARCHIVE || {};
   if (window.DIGEST_ARCHIVE[date]) return cb(window.DIGEST_ARCHIVE[date]);
@@ -180,22 +172,9 @@ function loadDay(date, cb){
 
 function esc(t){ return (t==null?"":String(t)).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
 
-/* ---------- source-link translation (KR toggle => Google Translate proxy to Korean) ---------- */
-var KO_HOST=/(^|\.)(ksg\.co\.kr|shippingnewsnet\.com|theguru\.co\.kr|finomy\.com|enetnews\.co\.kr|ceoscoredaily\.com|maritimepress\.co\.kr|kobc\.or\.kr|busanpa\.com)$/i;
-function isKoreanSource(it){
-  if(it && it.code==="KR") return true;
-  try{ var a=document.createElement("a"); a.href=it.url; return KO_HOST.test(a.hostname); }catch(e){ return false; }
-}
-function transUrl(u){
-  try{
-    var a=document.createElement("a"); a.href=u;
-    var ph=a.hostname.replace(/-/g,"--").replace(/\./g,"-")+".translate.goog";
-    var sep=a.search?"&":"?";
-    return a.protocol+"//"+ph+a.pathname+a.search+sep+"_x_tr_sl=auto&_x_tr_tl=ko&_x_tr_hl=ko"+(a.hash||"");
-  }catch(e){ return u; }
-}
-function srcTranslated(it){ return lang==="KR" && !isKoreanSource(it); }
-function srcUrl(it){ return srcTranslated(it) ? transUrl(it.url) : it.url; }
+/* source link: always open the ORIGINAL site (no Google Translate) */
+function srcTranslated(it){ return false; }
+function srcUrl(it){ return it.url; }
 
 /* ---------- card ---------- */
 function cardHtml(it, isAcc){
@@ -219,17 +198,15 @@ function cardHtml(it, isAcc){
   return html;
 }
 
-/* ---------- render (dispatch) ---------- */
+/* ---------- render ---------- */
 function render(){ if(viewMode==="all") return renderAll(); return renderDay(); }
 
-/* ---------- render: single day ---------- */
 function renderDay(){
   var main = document.getElementById("main");
   var q = (document.getElementById("search").value||"").trim().toLowerCase();
   if(!current){ main.innerHTML='<div class="empty">데이터가 없습니다.</div>'; return; }
 
-  var html = "";
-  html += '<div class="hero">'
+  var html = '<div class="hero">'
     + '<div><div class="big">'+(lang==="KR"?current.dateKR:current.dateEN)+' <span style="font-size:14px;color:var(--muted)">(KST)</span></div></div>'
     + '<div class="stats"><div class="stat"><b>'+current.sections.length+'</b><span>'+(lang==="KR"?"카테고리":"categories")+'</span></div>'
     + '<div class="stat"><b>'+current.total+'</b><span>'+(lang==="KR"?"기사":"items")+'</span></div></div></div>';
@@ -255,7 +232,6 @@ function renderDay(){
   main.innerHTML = html;
 }
 
-/* ---------- render: all-archive for one category (date ascending) ---------- */
 function renderAll(){
   var main = document.getElementById("main");
   var q = (document.getElementById("search").value||"").trim().toLowerCase();
@@ -277,9 +253,9 @@ function renderAll(){
   main.innerHTML = html;
 }
 
-/* ---------- aggregate one category across the whole archive ---------- */
+/* ---------- aggregate one category across the whole archive (date ascending) ---------- */
 function loadAllForCode(code, cb){
-  var dates = (window.DIGEST_MANIFEST||[]).slice().sort(); // ascending YYYY-MM-DD
+  var dates = (window.DIGEST_MANIFEST||[]).slice().sort();
   var acc = [], i = 0;
   (function next(){
     if(i >= dates.length){
