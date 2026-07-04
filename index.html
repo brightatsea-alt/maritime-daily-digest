@@ -29,9 +29,21 @@
   select,.toggle button,#search{font-family:inherit;font-size:13px}
   select{padding:7px 10px;border-radius:8px;border:none;background:#ffffff;color:var(--ink);cursor:pointer}
   #search{padding:7px 12px;border-radius:8px;border:none;width:180px;outline:none;color:var(--ink)}
-  .toggle{display:inline-flex;background:rgba(255,255,255,.18);border-radius:8px;overflow:hidden}
-  .toggle button{padding:7px 12px;border:none;background:transparent;color:#fff;cursor:pointer;font-weight:600}
-  .toggle button.on{background:#fff;color:var(--h1)}
+  /* Language toggle — emphasized */
+  .langwrap{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);
+    padding:4px 6px 4px 10px;border-radius:12px}
+  .langwrap .lng-ico{font-size:12px;font-weight:700;color:#fff;opacity:.95;white-space:nowrap}
+  .toggle{display:inline-flex;background:rgba(0,0,0,.20);border-radius:9px;overflow:hidden;
+    border:2px solid #ffd34d;box-shadow:0 0 0 3px rgba(255,211,77,.30)}
+  .toggle button{padding:8px 16px;border:none;background:transparent;color:#fff;cursor:pointer;
+    font-weight:700;font-size:14px;letter-spacing:.3px;transition:background .15s,color .15s}
+  .toggle button.on{background:#ffd34d;color:#1F4E79;box-shadow:0 1px 6px rgba(0,0,0,.25)}
+  .toggle button:not(.on):hover{background:rgba(255,255,255,.16)}
+  @keyframes lngpulse{0%,100%{box-shadow:0 0 0 3px rgba(255,211,77,.30)}
+    50%{box-shadow:0 0 0 7px rgba(255,211,77,.55)}}
+  .toggle.attn{animation:lngpulse 1.3s ease-in-out 4}
+  .trbadge{font-size:10.5px;color:#7a5a00;background:#ffe9a8;border-radius:6px;padding:1px 6px;
+    margin-left:5px;font-weight:700;white-space:nowrap}
 
   /* Nav chips */
   nav.cats{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:60px;z-index:40}
@@ -55,6 +67,12 @@
   /* Section */
   section.sec{margin-bottom:30px;scroll-margin-top:120px}
   .sec h2{font-size:19px;color:var(--h1);border-left:5px solid var(--h2);padding-left:10px;margin:0 0 14px}
+  .sec h2 .viewall{font-size:11.5px;font-weight:700;color:#fff;background:var(--h2);border:none;
+    border-radius:999px;padding:3px 11px;margin-left:9px;cursor:pointer;vertical-align:middle}
+  .sec h2 .viewall:hover{background:var(--h1)}
+  .backbtn{font-size:13px;font-weight:700;color:#fff;background:var(--h2);border:none;border-radius:8px;
+    padding:8px 15px;cursor:pointer}
+  .backbtn:hover{background:var(--h1)}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
 
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 16px;
@@ -89,14 +107,17 @@
 <body>
 <header>
   <div class="bar">
-    <div class="brand"><b>⚓ Maritime Daily Digest</b><span>해운 일일 동향 · 19개 카테고리</span></div>
+    <div class="brand"><b>⚓ Maritime Daily Digest</b><span>해운 일일 동향 · 카테고리별 뉴스</span></div>
     <div class="spacer"></div>
     <div class="ctrl">
       <input id="search" type="search" placeholder="검색 / Search…" autocomplete="off">
       <select id="dateSel" title="날짜 선택"></select>
-      <div class="toggle">
-        <button id="btnKR" class="on">KR</button>
-        <button id="btnEN">EN</button>
+      <div class="langwrap" title="KR: 출처 링크를 한글 번역으로 열기 · EN: 원문 그대로 열기">
+        <span class="lng-ico">🌐 언어·출처번역</span>
+        <div class="toggle attn" id="langToggle">
+          <button id="btnKR" class="on">KR</button>
+          <button id="btnEN">EN</button>
+        </div>
       </div>
     </div>
   </div>
@@ -125,14 +146,16 @@ var CAT = {
   HR:{i:"👥",kr:"Marine HR",en:"Marine HR"},
   HSEQ:{i:"🛡️",kr:"HSEQ",en:"HSEQ"},
   KR:{i:"🇰🇷",kr:"한국해운",en:"Korea"},
-  INS:{i:"🛟",kr:"H&M",en:"H&M"},
+  INS:{i:"🛟",kr:"P&I·H&M 보험",en:"Insurance"},
   PNI:{i:"⚓",kr:"P&I 클럽",en:"P&I Clubs"},
   VET:{i:"✅",kr:"Vetting",en:"Vetting"},
   CLASS:{i:"🏛️",kr:"선급",en:"Class"},
   COMM:{i:"💰",kr:"커머셜·용선",en:"Commercial"},
   GEO:{i:"🗺️",kr:"지리이슈",en:"Geo Issue"},
   TW:{i:"📰",kr:"TradeWinds",en:"TradeWinds"},
-  HOT:{i:"🔥",kr:"LL 핫토픽",en:"LL Hot Topics"}
+  HOT:{i:"🔥",kr:"LL 핫토픽",en:"LL Hot Topics"},
+  SYS:{i:"🖥️",kr:"System & App",en:"System & App"},
+  SMGR:{i:"🏢",kr:"선박관리사",en:"Ship Manager"}
 };
 var LBL = {
   KR:{date:"발표/시기",sum:"주요 내용",imp:"시사점",iDate:"발생/공개",iSum:"사고 개요",cause:"추정 원인",les:"Lessons Learned",src:"출처"},
@@ -140,6 +163,9 @@ var LBL = {
 };
 var lang = "KR";
 var current = null;
+var viewMode = "day";   // "day" | "all"
+var allCode = null;     // section code being shown in all-mode
+var allItems = [];      // aggregated items for allCode (date ascending)
 
 /* ---------- loader (file:// friendly) ---------- */
 function loadDay(date, cb){
@@ -154,17 +180,57 @@ function loadDay(date, cb){
 
 function esc(t){ return (t==null?"":String(t)).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
 
-/* ---------- render ---------- */
-function render(){
+/* ---------- source-link translation (KR toggle => Google Translate proxy to Korean) ---------- */
+var KO_HOST=/(^|\.)(ksg\.co\.kr|shippingnewsnet\.com|theguru\.co\.kr|finomy\.com|enetnews\.co\.kr|ceoscoredaily\.com|maritimepress\.co\.kr|kobc\.or\.kr|busanpa\.com)$/i;
+function isKoreanSource(it){
+  if(it && it.code==="KR") return true;
+  try{ var a=document.createElement("a"); a.href=it.url; return KO_HOST.test(a.hostname); }catch(e){ return false; }
+}
+function transUrl(u){
+  try{
+    var a=document.createElement("a"); a.href=u;
+    var ph=a.hostname.replace(/-/g,"--").replace(/\./g,"-")+".translate.goog";
+    var sep=a.search?"&":"?";
+    return a.protocol+"//"+ph+a.pathname+a.search+sep+"_x_tr_sl=auto&_x_tr_tl=ko&_x_tr_hl=ko"+(a.hash||"");
+  }catch(e){ return u; }
+}
+function srcTranslated(it){ return lang==="KR" && !isKoreanSource(it); }
+function srcUrl(it){ return srcTranslated(it) ? transUrl(it.url) : it.url; }
+
+/* ---------- card ---------- */
+function cardHtml(it, isAcc){
+  var L = LBL[lang];
+  var acc = isAcc && (it.kCause!=null || it.eCause!=null);
+  var showSum = (lang==="KR") || !!it.eTitle || !!it.eSum;
+  var html = '<div class="card'+(acc?" acc":"")+'">';
+  html += '<div class="top"><span class="code">'+esc(it.code)+'</span><span class="meta">'+esc(it.src)+' · '+esc(it.date||it._adate||"")+'</span></div>';
+  var ttl = (lang==="KR") ? it.title : (it.eTitle || (it.eSum ? String(it.eSum).replace(/\s*\.\s*$/,"") : it.title));
+  html += '<h3>'+esc(ttl)+'</h3>';
+  if(acc){
+    if(showSum) html += '<p><span class="lab">'+L.iSum+':</span> '+esc(lang==="KR"?it.kSum:it.eSum)+'</p>';
+    html += '<p><span class="lab cause">'+L.cause+':</span> '+esc(lang==="KR"?it.kCause:it.eCause)+'</p>';
+    html += '<div class="impl"><b>'+L.les+':</b> '+esc(lang==="KR"?it.kLes:it.eLes)+'</div>';
+  } else {
+    if(showSum) html += '<p><span class="lab">'+L.sum+':</span> '+esc(lang==="KR"?it.kSum:it.eSum)+'</p>';
+    html += '<div class="impl"><b>'+L.imp+':</b> '+esc(lang==="KR"?it.kImp:it.eImp)+'</div>';
+  }
+  html += '<div class="src">🔗 <a href="'+esc(srcUrl(it))+'" target="_blank" rel="noopener">'+L.src+'</a>'+(srcTranslated(it)?' <span class="trbadge">🌐 한글</span>':'')+'</div>';
+  html += '</div>';
+  return html;
+}
+
+/* ---------- render (dispatch) ---------- */
+function render(){ if(viewMode==="all") return renderAll(); return renderDay(); }
+
+/* ---------- render: single day ---------- */
+function renderDay(){
   var main = document.getElementById("main");
   var q = (document.getElementById("search").value||"").trim().toLowerCase();
   if(!current){ main.innerHTML='<div class="empty">데이터가 없습니다.</div>'; return; }
-  var L = LBL[lang];
-  var html = "";
 
+  var html = "";
   html += '<div class="hero">'
-    + '<div><div class="big">'+(lang==="KR"?current.dateKR:current.dateEN)+' <span style="font-size:14px;color:var(--muted)">(KST)</span></div>'
-    + '</div>'
+    + '<div><div class="big">'+(lang==="KR"?current.dateKR:current.dateEN)+' <span style="font-size:14px;color:var(--muted)">(KST)</span></div></div>'
     + '<div class="stats"><div class="stat"><b>'+current.sections.length+'</b><span>'+(lang==="KR"?"카테고리":"categories")+'</span></div>'
     + '<div class="stat"><b>'+current.total+'</b><span>'+(lang==="KR"?"기사":"items")+'</span></div></div></div>';
 
@@ -177,25 +243,11 @@ function render(){
     });
     if(!items.length) return;
     shown += items.length;
-    html += '<section class="sec" id="sec-'+s.code+'"><h2>'+(lang==="KR"?esc(s.kTitle):esc(s.eTitle))+'</h2><div class="grid">';
-    items.forEach(function(it,idx){
-      var acc = s.type==="accident";
-      var showSum = (lang==="KR") || !!it.eTitle;
-      html += '<div class="card'+(acc?" acc":"")+'">';
-      html += '<div class="top"><span class="code">'+esc(it.code)+'</span><span class="meta">'+esc(it.src)+' · '+esc(it.date)+'</span></div>';
-      var ttl = (lang==="KR") ? it.title : (it.eTitle || (it.eSum ? String(it.eSum).replace(/\s*\.\s*$/,"") : it.title));
-      html += '<h3>'+esc(ttl)+'</h3>';
-      if(acc){
-        if(showSum) html += '<p><span class="lab">'+L.iSum+':</span> '+esc(lang==="KR"?it.kSum:it.eSum)+'</p>';
-        html += '<p><span class="lab cause">'+L.cause+':</span> '+esc(lang==="KR"?it.kCause:it.eCause)+'</p>';
-        html += '<div class="impl"><b>'+L.les+':</b> '+esc(lang==="KR"?it.kLes:it.eLes)+'</div>';
-      } else {
-        if(showSum) html += '<p><span class="lab">'+L.sum+':</span> '+esc(lang==="KR"?it.kSum:it.eSum)+'</p>';
-        html += '<div class="impl"><b>'+L.imp+':</b> '+esc(lang==="KR"?it.kImp:it.eImp)+'</div>';
-      }
-      html += '<div class="src">🔗 <a href="'+esc(it.url)+'" target="_blank" rel="noopener">'+L.src+'</a></div>';
-      html += '</div>';
-    });
+    var title = (lang==="KR"?esc(s.kTitle):esc(s.eTitle));
+    html += '<section class="sec" id="sec-'+s.code+'"><h2>'+title
+      + ' <button class="viewall" onclick="viewAll(\''+s.code+'\')">'+(lang==="KR"?"전체보기":"View all")+'</button>'
+      + '</h2><div class="grid">';
+    items.forEach(function(it){ html += cardHtml(it, s.type==="accident"); });
     html += '</div></section>';
   });
 
@@ -203,51 +255,103 @@ function render(){
   main.innerHTML = html;
 }
 
+/* ---------- render: all-archive for one category (date ascending) ---------- */
+function renderAll(){
+  var main = document.getElementById("main");
+  var q = (document.getElementById("search").value||"").trim().toLowerCase();
+  var cat = CAT[allCode] || {i:"",kr:allCode,en:allCode};
+  var name = (lang==="KR"?cat.kr:cat.en);
+  var items = allItems.filter(function(it){
+    if(!q) return true;
+    var hay = (it.title+" "+(it.kSum||"")+" "+(it.eSum||"")+" "+it.src+" "+it.code+" "+(it._adate||"")).toLowerCase();
+    return hay.indexOf(q) >= 0;
+  });
+  var html = '<div class="hero"><div><div class="big">'+esc(cat.i+" "+name)+'</div>'
+    + '<div class="sub">'+(lang==="KR"?"전체보기 · 날짜 오름차순":"View all · date ascending")+'</div></div>'
+    + '<div class="stats"><div class="stat"><b>'+items.length+'</b><span>'+(lang==="KR"?"기사":"items")+'</span></div></div></div>';
+  html += '<div style="margin:-6px 0 16px"><button class="backbtn" onclick="exitAll()">'+(lang==="KR"?"◀ 돌아가기":"◀ Back")+'</button></div>';
+  html += '<section class="sec"><div class="grid">';
+  if(!items.length) html += '<div class="empty">'+(lang==="KR"?"데이터가 없습니다.":"No data.")+'</div>';
+  items.forEach(function(it){ html += cardHtml(it, it.code==="ACC"); });
+  html += '</div></section>';
+  main.innerHTML = html;
+}
+
+/* ---------- aggregate one category across the whole archive ---------- */
+function loadAllForCode(code, cb){
+  var dates = (window.DIGEST_MANIFEST||[]).slice().sort(); // ascending YYYY-MM-DD
+  var acc = [], i = 0;
+  (function next(){
+    if(i >= dates.length){
+      var seen = {}, uniq = [];
+      acc.forEach(function(it){ var k=(it.url||"").split("?")[0]; if(seen[k]) return; seen[k]=1; uniq.push(it); });
+      uniq.sort(function(a,b){
+        if(a._adate < b._adate) return -1;
+        if(a._adate > b._adate) return 1;
+        return String(a.date||"").localeCompare(String(b.date||""));
+      });
+      return cb(uniq);
+    }
+    var d = dates[i++];
+    loadDay(d, function(dg){
+      if(dg && dg.sections){
+        for(var j=0;j<dg.sections.length;j++){
+          var s = dg.sections[j];
+          if(s.code === code){
+            s.items.forEach(function(it){ var o={}; for(var k in it) o[k]=it[k]; o._adate=d; acc.push(o); });
+            break;
+          }
+        }
+      }
+      next();
+    });
+  })();
+}
+
+function viewAll(code){
+  viewMode = "all"; allCode = code;
+  document.getElementById("main").innerHTML = '<div class="empty">전체 아카이브 불러오는 중… / Loading archive…</div>';
+  loadAllForCode(code, function(items){ allItems = items; render(); try{window.scrollTo({top:0,behavior:"smooth"});}catch(e){window.scrollTo(0,0);} });
+}
+function exitAll(){ viewMode = "day"; allCode = null; allItems = []; render(); }
+
+/* ---------- nav chips ---------- */
 function buildNav(){
-  if(!current) return;
   var nav = document.getElementById("catNav");
+  if(!current){ nav.innerHTML = ""; return; }
   nav.innerHTML = current.sections.map(function(s){
-    var c = CAT[s.code]||{i:"•",kr:s.code,en:s.code};
-    return '<div class="chip" data-go="sec-'+s.code+'">'+c.i+' '+(lang==="KR"?c.kr:c.en)+'</div>';
+    var c = CAT[s.code] || {i:"",kr:s.code,en:s.code};
+    return '<span class="chip" onclick="gotoSec(\''+s.code+'\')">'+esc(c.i+" "+(lang==="KR"?c.kr:c.en))+'</span>';
   }).join("");
-  Array.prototype.forEach.call(nav.querySelectorAll(".chip"),function(ch){
-    ch.onclick=function(){ var el=document.getElementById(ch.getAttribute("data-go")); if(el) el.scrollIntoView({behavior:"smooth"}); };
-  });
+}
+function gotoSec(code){
+  if(viewMode==="all") exitAll();
+  setTimeout(function(){ var el=document.getElementById("sec-"+code); if(el) el.scrollIntoView({behavior:"smooth",block:"start"}); }, 40);
 }
 
-function show(date){
-  document.getElementById("main").innerHTML='<div class="empty">불러오는 중…</div>';
-  loadDay(date, function(d){
-    current = d; buildNav(); render();
-    document.getElementById("foot").innerHTML =
-      (lang==="KR"
-        ? "자동 생성 · daily-digest 플러그인 · 최종 데이터 "+date+" (KST) · 출처 링크는 원문으로 연결됩니다."
-        : "Auto-generated · daily-digest plugin · latest data "+date+" (KST) · source links open the original article.");
-  });
-}
-
+/* ---------- controls ---------- */
 function setLang(l){
-  lang=l;
-  document.getElementById("btnKR").className = l==="KR"?"on":"";
-  document.getElementById("btnEN").className = l==="EN"?"on":"";
-  document.documentElement.lang = l==="KR"?"ko":"en";
+  lang = l;
+  document.getElementById("btnKR").classList.toggle("on", l==="KR");
+  document.getElementById("btnEN").classList.toggle("on", l==="EN");
   buildNav(); render();
+}
+function selectDate(d){
+  loadDay(d, function(dg){ current = dg; viewMode = "day"; allCode=null; buildNav(); render(); });
 }
 
 /* ---------- init ---------- */
-(function(){
-  var dates = window.DIGEST_MANIFEST || [];
+(function init(){
+  var man = window.DIGEST_MANIFEST || [];
   var sel = document.getElementById("dateSel");
-  if(!dates.length){
-    document.getElementById("main").innerHTML='<div class="empty">아직 데이터가 없습니다. 디지에스트를 먼저 실행하세요.</div>';
-    return;
-  }
-  sel.innerHTML = dates.map(function(d,i){ return '<option value="'+d+'"'+(i===0?" selected":"")+'>'+d+(i===0?" (최신)":"")+'</option>'; }).join("");
-  sel.onchange = function(){ show(sel.value); };
-  document.getElementById("btnKR").onclick=function(){ setLang("KR"); };
-  document.getElementById("btnEN").onclick=function(){ setLang("EN"); };
-  var t; document.getElementById("search").oninput=function(){ clearTimeout(t); t=setTimeout(render,180); };
-  show(dates[0]);
+  sel.innerHTML = man.map(function(d,i){ return '<option value="'+d+'">'+d+(i===0?" (최신)":"")+'</option>'; }).join("");
+  document.getElementById("search").addEventListener("input", function(){ render(); });
+  document.getElementById("btnKR").addEventListener("click", function(){ setLang("KR"); });
+  document.getElementById("btnEN").addEventListener("click", function(){ setLang("EN"); });
+  sel.addEventListener("change", function(){ selectDate(sel.value); });
+  document.getElementById("foot").textContent = "Maritime Daily Digest · 자동 생성 · GitHub Pages";
+  if(man.length){ sel.value = man[0]; selectDate(man[0]); }
+  else { document.getElementById("main").innerHTML = '<div class="empty">데이터가 없습니다.</div>'; }
 })();
 </script>
 </body>
