@@ -214,7 +214,7 @@ function cardHtml(it, isAcc){
     if(showSum) html += '<p><span class="lab">'+L.sum+':</span> '+esc(lang==="KR"?it.kSum:it.eSum)+'</p>';
     html += '<div class="impl"><b>'+L.imp+':</b> '+esc(lang==="KR"?it.kImp:it.eImp)+'</div>';
   }
-  html += '<div class="src">🔗 <a href="'+esc(srcUrl(it))+'" target="_blank" rel="noopener">'+L.src+'</a>'+(srcTranslated(it)?' <span class="trbadge">🌐 한글</span>':'')+'</div>';
+  html += '<div class="src">🔗 <a href="'+esc(srcUrl(it))+'" target="_blank" rel="noopener">'+L.src+'</a></div>';
   html += '</div>';
   return html;
 }
