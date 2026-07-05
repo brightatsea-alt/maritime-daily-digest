@@ -83,6 +83,13 @@
 
   footer{max-width:1180px;margin:0 auto;padding:18px 16px 50px;color:var(--muted);font-size:12px;text-align:center}
   .empty{padding:60px 20px;text-align:center;color:var(--muted)}
+  .pager{display:flex;justify-content:center;align-items:center;gap:6px;flex-wrap:wrap;margin:24px 0 8px}
+  .pager .pg{min-width:34px;height:34px;padding:0 10px;border:1px solid var(--line);background:#fff;color:var(--h1);
+    border-radius:8px;font-size:13px;font-weight:700;cursor:pointer}
+  .pager .pg:hover:not(:disabled){border-color:var(--h2);background:var(--chip)}
+  .pager .pg.on{background:var(--h2);color:#fff;border-color:var(--h2)}
+  .pager .pg:disabled{opacity:.4;cursor:default}
+  .pager .pg-ell{color:var(--muted);padding:0 2px}
 
   @media (max-width:640px){
     .grid{grid-template-columns:1fr}
@@ -158,6 +165,8 @@ var current = null;
 var viewMode = "day";   // "day" | "all"
 var allCode = null;
 var allItems = [];
+var allPage = 0;
+var DAYS_PER_PAGE = 10;   /* archive view: days shown per page */
 
 /* ---------- loader ---------- */
 function loadDay(date, cb){
@@ -242,16 +251,51 @@ function renderAll(){
     var hay = (it.title+" "+(it.kSum||"")+" "+(it.eSum||"")+" "+it.src+" "+it.code+" "+(it._adate||"")).toLowerCase();
     return hay.indexOf(q) >= 0;
   });
+  /* distinct dates, newest first */
+  var dseen = {}, dates = [];
+  items.forEach(function(it){ var d=it._adate||it.date||""; if(!dseen[d]){ dseen[d]=1; dates.push(d); } });
+  dates.sort(function(a,b){ return a<b?1:(a>b?-1:0); });
+  var totalPages = Math.max(1, Math.ceil(dates.length / DAYS_PER_PAGE));
+  if(allPage<0) allPage=0;
+  if(allPage>totalPages-1) allPage=totalPages-1;
+  var pageDates = dates.slice(allPage*DAYS_PER_PAGE, allPage*DAYS_PER_PAGE + DAYS_PER_PAGE);
+  var pset = {}; pageDates.forEach(function(d){ pset[d]=1; });
+  var pageItems = items.filter(function(it){ return pset[it._adate||it.date||""]; });
+
+  var rangeTxt = "";
+  if(pageDates.length){ var a=pageDates[pageDates.length-1], b=pageDates[0]; rangeTxt = (a===b?b:(b+" ~ "+a)); }
   var html = '<div class="hero"><div><div class="big">'+esc(cat.i+" "+name)+'</div>'
-    + '<div class="sub">'+(lang==="KR"?"전체보기 · 날짜 오름차순":"View all · date ascending")+'</div></div>'
-    + '<div class="stats"><div class="stat"><b>'+items.length+'</b><span>'+(lang==="KR"?"기사":"items")+'</span></div></div></div>';
+    + '<div class="sub">'+(lang==="KR"?"전체보기 · 최신순 · 10일씩":"View all · newest first · 10 days/page")
+    + (rangeTxt?(' · '+esc(rangeTxt)):'')+'</div></div>'
+    + '<div class="stats"><div class="stat"><b>'+items.length+'</b><span>'+(lang==="KR"?"기사":"items")+'</span></div>'
+    + '<div class="stat"><b>'+dates.length+'</b><span>'+(lang==="KR"?"일자":"days")+'</span></div></div></div>';
   html += '<div style="margin:-6px 0 16px"><button class="backbtn" onclick="exitAll()">'+(lang==="KR"?"◀ 돌아가기":"◀ Back")+'</button></div>';
-  html += '<section class="sec"><div class="grid">';
-  if(!items.length) html += '<div class="empty">'+(lang==="KR"?"데이터가 없습니다.":"No data.")+'</div>';
-  items.forEach(function(it){ html += cardHtml(it, it.code==="ACC"); });
-  html += '</div></section>';
+  if(!pageItems.length){ html += '<div class="empty">'+(lang==="KR"?"데이터가 없습니다.":"No data.")+'</div>'; main.innerHTML=html; return; }
+  pageDates.forEach(function(d){
+    var dItems = pageItems.filter(function(it){ return (it._adate||it.date||"")===d; });
+    if(!dItems.length) return;
+    html += '<section class="sec"><h2>'+esc(d)+' <span style="font-size:12px;color:var(--muted);font-weight:400">('+dItems.length+')</span></h2><div class="grid">';
+    dItems.forEach(function(it){ html += cardHtml(it, it.code==="ACC"); });
+    html += '</div></section>';
+  });
+  html += pagerHtml(totalPages);
   main.innerHTML = html;
 }
+
+function pagerHtml(totalPages){
+  if(totalPages<=1) return "";
+  var h = '<div class="pager">';
+  h += '<button class="pg nav"'+(allPage<=0?' disabled':'')+' onclick="gotoAllPage('+(allPage-1)+')">‹</button>';
+  var start = Math.max(0, allPage-2), end = Math.min(totalPages-1, allPage+2);
+  if(start>0){ h += '<button class="pg" onclick="gotoAllPage(0)">1</button>'; if(start>1) h += '<span class="pg-ell">…</span>'; }
+  for(var p=start;p<=end;p++){ h += '<button class="pg'+(p===allPage?' on':'')+'" onclick="gotoAllPage('+p+')">'+(p+1)+'</button>'; }
+  if(end<totalPages-1){ if(end<totalPages-2) h += '<span class="pg-ell">…</span>'; h += '<button class="pg" onclick="gotoAllPage('+(totalPages-1)+')">'+totalPages+'</button>'; }
+  h += '<button class="pg nav"'+(allPage>=totalPages-1?' disabled':'')+' onclick="gotoAllPage('+(allPage+1)+')">›</button>';
+  h += '</div>';
+  return h;
+}
+
+function gotoAllPage(p){ allPage = p; render(); try{window.scrollTo({top:0,behavior:"smooth"});}catch(e){window.scrollTo(0,0);} }
 
 /* ---------- aggregate one category across the whole archive (date ascending) ---------- */
 function loadAllForCode(code, cb){
@@ -262,9 +306,9 @@ function loadAllForCode(code, cb){
       var seen = {}, uniq = [];
       acc.forEach(function(it){ var k=(it.url||"").split("?")[0]; if(seen[k]) return; seen[k]=1; uniq.push(it); });
       uniq.sort(function(a,b){
-        if(a._adate < b._adate) return -1;
-        if(a._adate > b._adate) return 1;
-        return String(a.date||"").localeCompare(String(b.date||""));
+        if(a._adate > b._adate) return -1;
+        if(a._adate < b._adate) return 1;
+        return String(b.date||"").localeCompare(String(a.date||""));
       });
       return cb(uniq);
     }
@@ -285,7 +329,7 @@ function loadAllForCode(code, cb){
 }
 
 function viewAll(code){
-  viewMode = "all"; allCode = code;
+  viewMode = "all"; allCode = code; allPage = 0;
   document.getElementById("main").innerHTML = '<div class="empty">전체 아카이브 불러오는 중… / Loading archive…</div>';
   loadAllForCode(code, function(items){ allItems = items; render(); try{window.scrollTo({top:0,behavior:"smooth"});}catch(e){window.scrollTo(0,0);} });
 }
@@ -321,7 +365,7 @@ function selectDate(d){
   var man = window.DIGEST_MANIFEST || [];
   var sel = document.getElementById("dateSel");
   sel.innerHTML = man.map(function(d,i){ return '<option value="'+d+'">'+d+(i===0?" (최신)":"")+'</option>'; }).join("");
-  document.getElementById("search").addEventListener("input", function(){ render(); });
+  document.getElementById("search").addEventListener("input", function(){ if(viewMode==="all") allPage=0; render(); });
   document.getElementById("btnKR").addEventListener("click", function(){ setLang("KR"); });
   document.getElementById("btnEN").addEventListener("click", function(){ setLang("EN"); });
   sel.addEventListener("change", function(){ selectDate(sel.value); });
