@@ -21,7 +21,10 @@
   header{position:sticky;top:0;z-index:50;background:linear-gradient(135deg,#1F4E79,#2E75B6);
     color:#fff;box-shadow:0 2px 10px rgba(31,78,121,.18)}
   .bar{max-width:1180px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-  .brand{display:flex;flex-direction:column;line-height:1.15}
+  .brand{display:flex;flex-direction:column;line-height:1.15;cursor:pointer;border-radius:8px;padding:2px 6px;margin:-2px -6px;transition:background .15s}
+  .brand:hover{background:rgba(255,255,255,.12)}
+  .brand:hover b{text-decoration:underline}
+  .brand:focus-visible{outline:2px solid #ffd34d;outline-offset:2px}
   .brand b{font-size:20px;letter-spacing:.2px}
   .brand span{font-size:12px;opacity:.85}
   .spacer{flex:1}
@@ -106,7 +109,7 @@
 <body>
 <header>
   <div class="bar">
-    <div class="brand"><b>⚓ Maritime Daily Digest</b><span>해운 일일 동향 · 카테고리별 뉴스</span></div>
+    <div class="brand" id="brandHome" role="button" tabindex="0" title="처음 화면으로 (새로고침) / Home (refresh)"><b>⚓ Maritime Daily Digest</b><span>해운 일일 동향 · 카테고리별 뉴스</span></div>
     <div class="spacer"></div>
     <div class="ctrl">
       <input id="search" type="search" placeholder="검색 / Search…" autocomplete="off">
@@ -335,6 +338,14 @@ function viewAll(code){
 }
 function exitAll(){ viewMode = "day"; allCode = null; allItems = []; render(); }
 
+/* ---------- brand -> refresh + initial screen ---------- */
+function goHome(){
+  try{
+    if(location.search || location.hash){ location.replace(location.pathname); }
+    else { location.reload(); }
+  }catch(e){ location.reload(); }
+}
+
 /* ---------- nav chips ---------- */
 function buildNav(){
   var nav = document.getElementById("catNav");
@@ -369,6 +380,11 @@ function selectDate(d){
   document.getElementById("btnKR").addEventListener("click", function(){ setLang("KR"); });
   document.getElementById("btnEN").addEventListener("click", function(){ setLang("EN"); });
   sel.addEventListener("change", function(){ selectDate(sel.value); });
+  var brand = document.getElementById("brandHome");
+  if(brand){
+    brand.addEventListener("click", goHome);
+    brand.addEventListener("keydown", function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); goHome(); } });
+  }
   document.getElementById("foot").textContent = "Maritime Daily Digest · 자동 생성 · GitHub Pages";
   if(man.length){ sel.value = man[0]; selectDate(man[0]); }
   else { document.getElementById("main").innerHTML = '<div class="empty">데이터가 없습니다.</div>'; }
