@@ -195,7 +195,7 @@ var acc = isAcc && (it.kCause!=null || it.eCause!=null);
 var showSum = (lang==="KR") || !!it.eTitle || !!it.eSum;
 var html = '<div class="card'+(acc?" acc":"")+'">';
 html += '<div class="top"><span class="code">'+esc(it.code)+'</span><span class="meta">'+esc(it.src)+' · '+esc(it._adate||it.date||"")+'</span></div>';
-var ttl = (lang==="KR") ? (it.titleKR || it.title) : (it.eTitle || (it.eSum ? String(it.eSum).replace(/\s*\.\s*$/,"") : it.title));
+var ttl = (lang==="KR") ? (it.titleKR || it.title) : (it.title || it.eTitle || "");
 html += '<h3>'+esc(ttl)+'</h3>';
 if(acc){
 if(showSum) html += '<p><span class="lab">'+L.iSum+':</span> '+esc(lang==="KR"?it.kSum:it.eSum)+'</p>';
