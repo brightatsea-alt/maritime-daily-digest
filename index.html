@@ -42,8 +42,21 @@ font-weight:700;font-size:14px;letter-spacing:.3px;transition:background .15s,co
 .toggle button.on{background:#ffd34d;color:#1F4E79;box-shadow:0 1px 6px rgba(0,0,0,.25)}
 .toggle button:not(.on):hover{background:rgba(255,255,255,.16)}
 
+/* View tabs (Daily digest / Tonnage) */
+.vtabs{background:#fff;border-bottom:1px solid var(--line)}
+.vtabs-inner{max-width:1180px;margin:0 auto;padding:0 16px;display:flex;gap:4px}
+.vtab{appearance:none;border:none;background:transparent;font-family:inherit;font-size:13.5px;font-weight:700;
+color:var(--muted);padding:11px 16px 9px;cursor:pointer;border-bottom:3px solid transparent;transition:color .15s,border-color .15s}
+.vtab:hover{color:var(--h2)}
+.vtab.on{color:var(--h1);border-bottom-color:var(--h2)}
+.vtab .vt-ico{margin-right:5px}
+
+/* Tonnage figure badge */
+.fig{font-size:12.5px;font-weight:700;color:var(--h1);background:#eaf2fb;border:1px solid #cfe0f2;
+border-radius:8px;padding:7px 10px;margin:0 0 9px;line-height:1.5}
+
 /* Nav chips — max 2 lines */
-nav.cats{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:60px;z-index:40}
+nav.cats{background:#fff;border-bottom:1px solid var(--line)}
 .cats-inner{max-width:1180px;margin:0 auto;padding:8px 16px;display:flex;flex-wrap:wrap;gap:7px;max-height:82px;overflow-y:auto}
 .chip{white-space:nowrap;padding:5px 10px;border-radius:999px;background:var(--chip);color:var(--h1);
 font-size:12.5px;font-weight:600;cursor:pointer;border:1px solid transparent}
@@ -97,10 +110,11 @@ border-radius:8px;font-size:13px;font-weight:700;cursor:pointer}
 @media (max-width:640px){
 .grid{grid-template-columns:1fr}
 #search{width:130px}
-nav.cats{top:auto;position:static}
+.vtabs-inner{padding:0 8px}
+.vtab{padding:10px 11px 8px;font-size:12.5px}
 }
 @media print{
-header,nav.cats,.ctrl,.hero .stats{display:none}
+header,nav.cats,.vtabs,.ctrl,.hero .stats{display:none}
 .card{break-inside:avoid;box-shadow:none}
 body{background:#fff}
 }
@@ -124,6 +138,11 @@ body{background:#fff}
 </div>
 </div>
 </header>
+
+<div class="vtabs"><div class="vtabs-inner">
+<button class="vtab on" id="tabDaily"><span class="vt-ico">📰</span><span id="tabDailyTxt">일일 다이제스트</span></button>
+<button class="vtab" id="tabTon"><span class="vt-ico">📊</span><span id="tabTonTxt">선복량·건조량</span></button>
+</div></div>
 
 <nav class="cats"><div class="cats-inner" id="catNav"></div></nav>
 
@@ -159,13 +178,25 @@ HOT:{i:"🔥",kr:"LL 핫토픽",en:"LL Hot Topics"},
 SYS:{i:"🖥️",kr:"System & App",en:"System & App"},
 SMGR:{i:"🏢",kr:"선박관리사",en:"Ship Manager"}
 };
+var TGRP = {
+OVW:{i:"🌍",kr:"세계 선대",en:"World Fleet"},
+PCTC:{i:"🚗",kr:"자동차운반선",en:"Car Carriers"},
+BULK:{i:"⛴️",kr:"벌크선",en:"Dry Bulk"},
+TANK:{i:"🛢️",kr:"탱커",en:"Tankers"},
+CONT:{i:"📦",kr:"컨테이너선",en:"Containers"},
+GAS:{i:"🔥",kr:"가스선",en:"Gas Carriers"},
+YARD:{i:"🏗️",kr:"조선소·건조량",en:"Shipyards"},
+SCRAP:{i:"♻️",kr:"해체·선령",en:"Recycling"}
+};
 var LBL = {
-KR:{date:"발표/시기",sum:"주요 내용",imp:"시사점",iDate:"발생/공개",iSum:"사고 개요",cause:"추정 원인",les:"Lessons Learned",src:"출처"},
-EN:{date:"Date/Source",sum:"Summary",imp:"Implication",iDate:"Incident Date",iSum:"Incident Summary",cause:"Probable Cause",les:"Lessons Learned",src:"Source"}
+KR:{date:"발표/시기",sum:"주요 내용",imp:"시사점",iDate:"발생/공개",iSum:"사고 개요",cause:"추정 원인",les:"Lessons Learned",src:"출처",fig:"핵심 수치"},
+EN:{date:"Date/Source",sum:"Summary",imp:"Implication",iDate:"Incident Date",iSum:"Incident Summary",cause:"Probable Cause",les:"Lessons Learned",src:"Source",fig:"Key figures"}
 };
 var lang = "KR";
 var current = null;
-var viewMode = "day"; // "day" | "all"
+var viewMode = "day"; // "day" | "all" | "tonnage"
+var tonnage = null;
+var tonLoading = false;
 var allCode = null;
 var allItems = [];
 var allPage = 0;
@@ -179,6 +210,17 @@ var s = document.createElement("script");
 s.src = "digest-" + date + ".js?v=" + Date.now();
 s.onload = function(){ cb(window.DIGEST_ARCHIVE[date] || null); };
 s.onerror = function(){ cb(null); };
+document.head.appendChild(s);
+}
+
+function loadTonnage(cb){
+if(window.TONNAGE) return cb(window.TONNAGE);
+if(tonLoading) return;
+tonLoading = true;
+var s = document.createElement("script");
+s.src = "tonnage.js?v=" + Date.now();
+s.onload = function(){ tonLoading=false; cb(window.TONNAGE || null); };
+s.onerror = function(){ tonLoading=false; cb(null); };
 document.head.appendChild(s);
 }
 
@@ -211,7 +253,58 @@ return html;
 }
 
 /* ---------- render ---------- */
-function render(){ if(viewMode==="all") return renderAll(); return renderDay(); }
+function render(){
+if(viewMode==="tonnage") return renderTonnage();
+if(viewMode==="all") return renderAll();
+return renderDay();
+}
+
+function tcardHtml(it){
+var L = LBL[lang];
+var ttl = (lang==="KR") ? it.title : (it.eTitle || it.title);
+var fig = (lang==="KR") ? it.kFig : (it.eFig || it.kFig);
+var sum = (lang==="KR") ? it.kSum : (it.eSum || "");
+var imp = (lang==="KR") ? it.kImp : (it.eImp || "");
+var html = '<div class="card">';
+html += '<div class="top"><span class="code">'+esc(it.code)+'</span><span class="meta">'+esc(it.src)+' · '+esc(it.date||"")+'</span></div>';
+html += '<h3>'+esc(ttl)+'</h3>';
+if(fig) html += '<div class="fig">📊 '+esc(fig)+'</div>';
+if(sum) html += '<p><span class="lab">'+L.sum+':</span> '+esc(sum)+'</p>';
+if(imp) html += '<div class="impl"><b>'+L.imp+':</b> '+esc(imp)+'</div>';
+html += '<div class="src">🔗 <a href="'+esc(it.url)+'" target="_blank" rel="noopener">'+L.src+'</a></div>';
+html += '</div>';
+return html;
+}
+
+function renderTonnage(){
+var main = document.getElementById("main");
+var q = (document.getElementById("search").value||"").trim().toLowerCase();
+if(!tonnage){ main.innerHTML='<div class="empty">'+(lang==="KR"?"선복량 데이터를 불러오지 못했습니다.":"Could not load tonnage data.")+'</div>'; return; }
+
+var html = '<div class="hero">'
++ '<div><div class="big">'+(lang==="KR"?"📊 선복량 · 건조량 동향":"📊 Tonnage & Newbuilding")+'</div>'
++ '<div class="sub">'+(lang==="KR"?"기준일 ":"Updated ")+esc(lang==="KR"?tonnage.updatedKR:tonnage.updatedEN)
++ ' · Clarksons / Hellenic / TradeWinds / Splash / Xinde '+(lang==="KR"?"등":"and others")+'</div></div>'
++ '<div class="stats"><div class="stat"><b>'+tonnage.groups.length+'</b><span>'+(lang==="KR"?"부문":"segments")+'</span></div>'
++ '<div class="stat"><b>'+tonnage.total+'</b><span>'+(lang==="KR"?"항목":"items")+'</span></div></div></div>';
+
+var shown = 0;
+tonnage.groups.forEach(function(g){
+var items = g.items.filter(function(it){
+if(!q) return true;
+var hay = (it.title+" "+(it.eTitle||"")+" "+(it.kFig||"")+" "+(it.kSum||"")+" "+(it.kImp||"")+" "+it.src+" "+it.code).toLowerCase();
+return hay.indexOf(q) >= 0;
+});
+if(!items.length) return;
+shown += items.length;
+html += '<section class="sec" id="tsec-'+g.code+'"><h2>'+esc(lang==="KR"?g.kTitle:g.eTitle)
++ ' <span style="font-size:12px;color:var(--muted);font-weight:400">('+items.length+')</span></h2><div class="grid">';
+items.forEach(function(it){ html += tcardHtml(it); });
+html += '</div></section>';
+});
+if(!shown) html += '<div class="empty">'+(lang==="KR"?"검색 결과가 없습니다.":"No results.")+'</div>';
+main.innerHTML = html;
+}
 
 function renderDay(){
 var main = document.getElementById("main");
@@ -349,6 +442,14 @@ else { location.reload(); }
 /* ---------- nav chips ---------- */
 function buildNav(){
 var nav = document.getElementById("catNav");
+if(viewMode==="tonnage"){
+if(!tonnage){ nav.innerHTML = ""; return; }
+nav.innerHTML = tonnage.groups.map(function(g){
+var c = TGRP[g.code] || {i:"",kr:g.code,en:g.code};
+return '<span class="chip" onclick="gotoSec(\''+g.code+'\')">'+esc(c.i+" "+(lang==="KR"?c.kr:c.en))+'</span>';
+}).join("");
+return;
+}
 if(!current){ nav.innerHTML = ""; return; }
 nav.innerHTML = current.sections.map(function(s){
 var c = CAT[s.code] || {i:"",kr:s.code,en:s.code};
@@ -356,8 +457,37 @@ return '<span class="chip" onclick="gotoSec(\''+s.code+'\')">'+esc(c.i+" "+(lang
 }).join("");
 }
 function gotoSec(code){
-if(viewMode==="all") exitAll();
-setTimeout(function(){ var el=document.getElementById("sec-"+code); if(el) el.scrollIntoView({behavior:"smooth",block:"start"}); }, 40);
+var pre = "sec-";
+if(viewMode==="tonnage"){ pre = "tsec-"; }
+else if(viewMode==="all"){ exitAll(); }
+setTimeout(function(){ var el=document.getElementById(pre+code); if(el) el.scrollIntoView({behavior:"smooth",block:"start"}); }, 40);
+}
+
+/* ---------- view tabs ---------- */
+function paintTabs(){
+document.getElementById("tabDaily").classList.toggle("on", viewMode!=="tonnage");
+document.getElementById("tabTon").classList.toggle("on", viewMode==="tonnage");
+document.getElementById("dateSel").style.display = (viewMode==="tonnage") ? "none" : "";
+document.getElementById("tabDailyTxt").textContent = (lang==="KR") ? "일일 다이제스트" : "Daily Digest";
+document.getElementById("tabTonTxt").textContent = (lang==="KR") ? "선복량·건조량" : "Tonnage";
+}
+function showDaily(){
+if(viewMode!=="tonnage") return;
+viewMode = "day"; allCode = null; allItems = [];
+paintTabs(); buildNav(); render();
+try{window.scrollTo({top:0,behavior:"smooth"});}catch(e){window.scrollTo(0,0);}
+}
+function showTonnage(){
+if(viewMode==="tonnage") return;
+viewMode = "tonnage"; allCode = null; allItems = [];
+paintTabs();
+document.getElementById("catNav").innerHTML = "";
+if(tonnage){ buildNav(); render(); }
+else {
+document.getElementById("main").innerHTML = '<div class="empty">'+(lang==="KR"?"선복량 데이터 불러오는 중…":"Loading tonnage data…")+'</div>';
+loadTonnage(function(d){ tonnage = d; buildNav(); render(); });
+}
+try{window.scrollTo({top:0,behavior:"smooth"});}catch(e){window.scrollTo(0,0);}
 }
 
 /* ---------- controls ---------- */
@@ -365,10 +495,10 @@ function setLang(l){
 lang = l;
 document.getElementById("btnKR").classList.toggle("on", l==="KR");
 document.getElementById("btnEN").classList.toggle("on", l==="EN");
-buildNav(); render();
+paintTabs(); buildNav(); render();
 }
 function selectDate(d){
-loadDay(d, function(dg){ current = dg; viewMode = "day"; allCode=null; buildNav(); render(); });
+loadDay(d, function(dg){ current = dg; viewMode = "day"; allCode=null; paintTabs(); buildNav(); render(); });
 }
 
 /* ---------- init ---------- */
@@ -380,6 +510,9 @@ document.getElementById("search").addEventListener("input", function(){ if(viewM
 document.getElementById("btnKR").addEventListener("click", function(){ setLang("KR"); });
 document.getElementById("btnEN").addEventListener("click", function(){ setLang("EN"); });
 sel.addEventListener("change", function(){ selectDate(sel.value); });
+document.getElementById("tabDaily").addEventListener("click", showDaily);
+document.getElementById("tabTon").addEventListener("click", showTonnage);
+paintTabs();
 var brand = document.getElementById("brandHome");
 if(brand){
 brand.addEventListener("click", goHome);
