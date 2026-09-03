@@ -43,13 +43,19 @@ font-weight:700;font-size:14px;letter-spacing:.3px;transition:background .15s,co
 .toggle button:not(.on):hover{background:rgba(255,255,255,.16)}
 
 /* View tabs (Daily digest / Tonnage) */
-.vtabs{background:#fff;border-bottom:1px solid var(--line)}
-.vtabs-inner{max-width:1180px;margin:0 auto;padding:0 16px;display:flex;gap:4px}
-.vtab{appearance:none;border:none;background:transparent;font-family:inherit;font-size:13.5px;font-weight:700;
-color:var(--muted);padding:11px 16px 9px;cursor:pointer;border-bottom:3px solid transparent;transition:color .15s,border-color .15s}
-.vtab:hover{color:var(--h2)}
-.vtab.on{color:var(--h1);border-bottom-color:var(--h2)}
-.vtab .vt-ico{margin-right:5px}
+.vtabs{background:#fff;border-bottom:2px solid var(--h2)}
+.vtabs-inner{max-width:1180px;margin:0 auto;padding:9px 16px 0;display:flex;gap:8px}
+.vtab{appearance:none;font-family:inherit;font-size:14.5px;font-weight:800;cursor:pointer;
+color:var(--h1);background:var(--chip);border:2px solid var(--line);border-bottom:none;
+padding:10px 20px;border-radius:10px 10px 0 0;position:relative;top:2px;
+transition:background .15s,color .15s,border-color .15s}
+.vtab:hover{background:#dfeaf6;border-color:var(--h2)}
+.vtab.on{background:var(--h2);color:#fff;border-color:var(--h2);box-shadow:0 -2px 8px rgba(31,78,121,.20)}
+.vtab .vt-ico{margin-right:6px}
+
+/* Tonnage shortcut chip inside the daily category row */
+.chip.tonchip{background:var(--h1);color:#fff;border-color:var(--h1)}
+.chip.tonchip:hover{background:var(--h2);border-color:var(--h2)}
 
 /* Tonnage figure badge */
 .fig{font-size:12.5px;font-weight:700;color:var(--h1);background:#eaf2fb;border:1px solid #cfe0f2;
@@ -454,7 +460,10 @@ if(!current){ nav.innerHTML = ""; return; }
 nav.innerHTML = current.sections.map(function(s){
 var c = CAT[s.code] || {i:"",kr:s.code,en:s.code};
 return '<span class="chip" onclick="gotoSec(\''+s.code+'\')">'+esc(c.i+" "+(lang==="KR"?c.kr:c.en))+'</span>';
-}).join("");
+}).join("")
++ '<span class="chip tonchip" onclick="showTonnage()" title="'
++ (lang==="KR"?"선복량·건조량 탭으로 이동":"Go to the Tonnage tab")+'">'
++ (lang==="KR"?"📊 선복량·건조량 ▸":"📊 Tonnage ▸")+'</span>';
 }
 function gotoSec(code){
 var pre = "sec-";
