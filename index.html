@@ -57,6 +57,38 @@ transition:background .15s,color .15s,border-color .15s}
 .chip.tonchip{background:var(--h1);color:#fff;border-color:var(--h1)}
 .chip.tonchip:hover{background:var(--h2);border-color:var(--h2)}
 
+/* Forecast tab */
+.fc-verdict{background:linear-gradient(135deg,#1F4E79,#2E75B6);color:#fff;border-radius:14px;
+padding:22px 24px;margin-bottom:20px}
+.fc-verdict h2{margin:0 0 10px;font-size:21px;line-height:1.4;color:#fff}
+.fc-verdict p.lead{margin:0 0 14px;font-size:14px;line-height:1.7;color:#eaf2fb}
+.fc-verdict ul{margin:0;padding-left:18px}
+.fc-verdict li{font-size:13.5px;line-height:1.65;color:#dce9f6;margin-bottom:6px}
+.fc-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px;margin-bottom:22px}
+.fc-kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.fc-kpi b{display:block;font-size:23px;color:var(--h2);line-height:1.25}
+.fc-kpi span{font-size:12px;color:var(--muted)}
+.fc-kpi em{display:block;font-style:normal;font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.45}
+.chartbox{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px 14px;margin-bottom:20px}
+.chartbox h3{margin:0 0 3px;font-size:15.5px;color:var(--h1)}
+.chartbox .cap{margin:0 0 12px;font-size:12.5px;color:var(--muted);line-height:1.5}
+.chartbox svg{display:block;width:100%;height:auto;overflow:visible}
+.lgd{display:flex;flex-wrap:wrap;gap:14px;margin:10px 0 2px;font-size:12.5px;color:var(--muted)}
+.lgd i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.fc-tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.fc-tbl{border-collapse:collapse;width:100%;min-width:520px;font-size:12.5px}
+table.fc-tbl th,table.fc-tbl td{border:1px solid var(--line);padding:7px 10px;text-align:right;white-space:nowrap}
+table.fc-tbl th{background:var(--chip);color:var(--h1);font-weight:700}
+table.fc-tbl th:first-child,table.fc-tbl td:first-child{text-align:left}
+table.fc-tbl td.warn{background:#fdeeea;color:#a8341f;font-weight:700}
+.fc-note{font-size:12px;color:var(--muted);line-height:1.6;margin-top:10px}
+.watch li{font-size:13px;line-height:1.6;margin-bottom:7px}
+.watch b{color:var(--h1)}
+.wt{display:inline-block;font-size:11px;font-weight:700;color:#fff;border-radius:5px;padding:1px 7px;margin-left:6px}
+.wt.h{background:#b3261e}.wt.m{background:#eda100}.wt.l{background:#6b7689}
+#fcTip{position:fixed;z-index:200;pointer-events:none;background:#0f2437;color:#fff;font-size:12px;
+line-height:1.55;padding:8px 11px;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.28);display:none;max-width:250px}
+
 /* Tonnage figure badge */
 .fig{font-size:12.5px;font-weight:700;color:var(--h1);background:#eaf2fb;border:1px solid #cfe0f2;
 border-radius:8px;padding:7px 10px;margin:0 0 9px;line-height:1.5}
@@ -148,7 +180,9 @@ body{background:#fff}
 <div class="vtabs"><div class="vtabs-inner">
 <button class="vtab on" id="tabDaily"><span class="vt-ico">📰</span><span id="tabDailyTxt">일일 다이제스트</span></button>
 <button class="vtab" id="tabTon"><span class="vt-ico">📊</span><span id="tabTonTxt">선복량·건조량</span></button>
+<button class="vtab" id="tabFc"><span class="vt-ico">🔮</span><span id="tabFcTxt">Forecast</span></button>
 </div></div>
+<div id="fcTip"></div>
 
 <nav class="cats"><div class="cats-inner" id="catNav"></div></nav>
 
@@ -203,6 +237,9 @@ var current = null;
 var viewMode = "day"; // "day" | "all" | "tonnage"
 var tonnage = null;
 var tonLoading = false;
+var forecast = null;
+var fcLoading = false;
+var SER = ["#2a78d6","#eb6834","#1baf7a"];   /* validated categorical slots 1-3 */
 var allCode = null;
 var allItems = [];
 var allPage = 0;
@@ -227,6 +264,17 @@ var s = document.createElement("script");
 s.src = "tonnage.js?v=" + Date.now();
 s.onload = function(){ tonLoading=false; cb(window.TONNAGE || null); };
 s.onerror = function(){ tonLoading=false; cb(null); };
+document.head.appendChild(s);
+}
+
+function loadForecast(cb){
+if(window.FORECAST) return cb(window.FORECAST);
+if(fcLoading) return;
+fcLoading = true;
+var s = document.createElement("script");
+s.src = "forecast.js?v=" + Date.now();
+s.onload = function(){ fcLoading=false; cb(window.FORECAST || null); };
+s.onerror = function(){ fcLoading=false; cb(null); };
 document.head.appendChild(s);
 }
 
@@ -259,7 +307,193 @@ return html;
 }
 
 /* ---------- render ---------- */
+/* ---------- tiny SVG chart helpers ---------- */
+function fcTipShow(e, html){
+var t = document.getElementById("fcTip");
+t.innerHTML = html; t.style.display = "block";
+var x = e.clientX + 14, y = e.clientY + 14;
+if(x + t.offsetWidth > window.innerWidth - 8) x = e.clientX - t.offsetWidth - 14;
+if(y + t.offsetHeight > window.innerHeight - 8) y = e.clientY - t.offsetHeight - 14;
+t.style.left = x + "px"; t.style.top = y + "px";
+}
+function fcTipHide(){ document.getElementById("fcTip").style.display = "none"; }
+
+/* grouped/simple column chart — one series, direct labels on every bar */
+function barChart(rows, opt){
+var W=760, H=opt.h||230, L=44, R=14, T=18, B=34;
+var iw=W-L-R, ih=H-T-B;
+var max = Math.max.apply(null, rows.map(function(r){return r.v;})) * 1.18;
+var bw = iw/rows.length*0.56, gap = iw/rows.length;
+var g = '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(opt.aria||opt.title||"")+'">';
+[0,.25,.5,.75,1].forEach(function(f){
+var y = T+ih-ih*f;
+g += '<line x1="'+L+'" y1="'+y+'" x2="'+(W-R)+'" y2="'+y+'" stroke="#eef1f6" stroke-width="1"/>';
+g += '<text x="'+(L-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="10.5" fill="#8b93a3">'+opt.fmtAxis(max*f)+'</text>';
+});
+rows.forEach(function(r,i){
+var h = ih*(r.v/max), x = L + gap*i + (gap-bw)/2, y = T+ih-h;
+g += '<rect class="fcbar" data-t="'+esc(r.tip||"")+'" x="'+x+'" y="'+y+'" width="'+bw+'" height="'+Math.max(h,2)+'" rx="4" ry="4" fill="'+(r.c||opt.color||SER[0])+'"/>';
+g += '<text x="'+(x+bw/2)+'" y="'+(y-7)+'" text-anchor="middle" font-size="12" font-weight="700" fill="#1F4E79">'+esc(r.lab)+'</text>';
+g += '<text x="'+(x+bw/2)+'" y="'+(T+ih+18)+'" text-anchor="middle" font-size="11.5" fill="#52514e">'+esc(r.x)+'</text>';
+if(r.x2) g += '<text x="'+(x+bw/2)+'" y="'+(T+ih+31)+'" text-anchor="middle" font-size="10" fill="#8b93a3">'+esc(r.x2)+'</text>';
+});
+g += '<line x1="'+L+'" y1="'+(T+ih)+'" x2="'+(W-R)+'" y2="'+(T+ih)+'" stroke="#c9d2de" stroke-width="1"/>';
+return g + '</svg>';
+}
+
+/* multi-series line chart with a threshold rule, direct end labels and hover */
+function lineChart(series, years, opt){
+var W=760, H=270, L=46, R=104, T=18, B=32;
+var iw=W-L-R, ih=H-T-B;
+var lo=opt.lo, hi=opt.hi;
+var X=function(i){ return L + iw*(i/(years.length-1)); };
+var Y=function(v){ return T + ih - ih*((v-lo)/(hi-lo)); };
+var g = '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(opt.aria||"")+'">';
+for(var v=lo; v<=hi+1e-9; v+=opt.step){
+var y=Y(v);
+g += '<line x1="'+L+'" y1="'+y+'" x2="'+(W-R)+'" y2="'+y+'" stroke="#eef1f6" stroke-width="1"/>';
+g += '<text x="'+(L-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="10.5" fill="#8b93a3">'+(Math.round(v*1000)/10)+'%</text>';
+}
+years.forEach(function(yr,i){
+g += '<text x="'+X(i)+'" y="'+(T+ih+18)+'" text-anchor="middle" font-size="11.5" fill="#52514e">'+yr+'</text>';
+});
+/* oversupply threshold */
+var ty=Y(opt.thr);
+g += '<line x1="'+L+'" y1="'+ty+'" x2="'+(W-R)+'" y2="'+ty+'" stroke="#b3261e" stroke-width="2" stroke-dasharray="6 4"/>';
+g += '<text x="'+(W-R+6)+'" y="'+(ty+4)+'" font-size="11" font-weight="700" fill="#b3261e">'+esc(opt.thrLabel)+'</text>';
+var hits = "";
+series.forEach(function(s,si){
+var d = years.map(function(yr,i){ return (i?"L":"M")+X(i)+" "+Y(s.v[i]); }).join(" ");
+g += '<path d="'+d+'" fill="none" stroke="'+s.c+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+years.forEach(function(yr,i){
+g += '<circle cx="'+X(i)+'" cy="'+Y(s.v[i])+'" r="4" fill="'+s.c+'" stroke="#fff" stroke-width="2"/>';
+hits += '<circle class="fcpt" data-t="'+esc(s.name+" · "+yr+" · 가동률 "+(Math.round(s.v[i]*1000)/10)+"%")+'" cx="'+X(i)+'" cy="'+Y(s.v[i])+'" r="8" fill="transparent"/>';
+});
+var last=years.length-1;
+g += '<text x="'+(X(last)+9)+'" y="'+(Y(s.v[last])+4)+'" font-size="11.5" font-weight="700" fill="'+s.c+'">'+esc(s.name)+'</text>';
+});
+g += hits;
+g += '<line x1="'+L+'" y1="'+(T+ih)+'" x2="'+(W-R)+'" y2="'+(T+ih)+'" stroke="#c9d2de" stroke-width="1"/>';
+return g + '</svg>';
+}
+
+function bindChartHover(){
+["fcbar","fcpt"].forEach(function(cls){
+Array.prototype.forEach.call(document.querySelectorAll("."+cls), function(el){
+var t = el.getAttribute("data-t"); if(!t) return;
+el.style.cursor="default";
+el.addEventListener("mousemove", function(e){ fcTipShow(e, esc(t)); });
+el.addEventListener("mouseleave", fcTipHide);
+});
+});
+}
+
+function renderForecast(){
+var main = document.getElementById("main");
+if(!forecast){ main.innerHTML='<div class="empty">전망 데이터를 불러오지 못했습니다.</div>'; return; }
+var F=forecast, M=F.model, A=M.anchors, yrs=M.years, sc=M.scenarios;
+var order=["B","A","C"];
+var kr=(lang==="KR");
+
+var html = '<div class="fc-verdict"><h2>'+esc(kr?F.verdict.headline:F.verdict.headlineEN)+'</h2>';
+if(kr){
+html += '<p class="lead">'+esc(F.verdict.lead)+'</p><ul>';
+F.verdict.bullets.forEach(function(b){ html += '<li>'+esc(b)+'</li>'; });
+html += '</ul>';
+}
+html += '</div>';
+
+html += '<div class="fc-kpis">'
++ '<div class="fc-kpi"><b>'+sc.B.crossYear+'</b><span>기준 시나리오 과포화 전환</span><em>실효 가동률이 '+Math.round(M.oversupplyLine*100)+'% 아래로</em></div>'
++ '<div class="fc-kpi"><b>'+A.fleetShips2025+'척</b><span>운항 중 PCTC</span><em>약 '+(A.fleetCEU2025/10000).toFixed(0)+'만 CEU (역산 추정)</em></div>'
++ '<div class="fc-kpi"><b>'+Math.round(A.orderbookPctCapacity*100)+'%</b><span>수주잔량 / 선대</span><em>'+A.orderbookShips2025+'척 · 벌크선 14%의 2.5배</em></div>'
++ '<div class="fc-kpi"><b>67 → 26척</b><span>인도 2026 → 2028</span><em>공급 압력의 정점은 올해</em></div>'
++ '</div>';
+
+/* chart 1 — deliveries */
+var drows = yrs.slice(1).map(function(y){
+var n=M.deliveries.ships[y], c=M.deliveries.ceu[y];
+return {x:String(y), x2:(y>=2029?"추정":""), v:n, lab:n+"척",
+        c:(y>=2029?"#9ab6d4":SER[0]),
+        tip:y+"년 인도 "+n+"척 · 약 "+Math.round(c/1000)+"천 CEU"+(y>=2029?" (2026년 발주분 배분 추정)":"")};
+});
+html += '<div class="chartbox"><h3>연도별 인도 척수 — 압력의 정점은 2026년</h3>'
++ '<p class="cap">2023~2028년 인도 예정 276척 중 약 80%가 중국 건조. 2029~2030년(연회색)은 2026년에 확인된 발주를 인도 시점으로 배분한 추정치입니다.</p>'
++ barChart(drows, {fmtAxis:function(v){return Math.round(v);}, aria:"연도별 자동차운반선 인도 척수"})
++ '</div>';
+
+/* chart 2 — utilisation */
+var series = order.map(function(k,i){
+return {name:sc[k].name, c:SER[i], v:yrs.map(function(y){ return sc[k].util[y]; })};
+});
+html += '<div class="chartbox"><h3>시나리오별 실효 가동률과 과포화 전환점</h3>'
++ '<p class="cap">실효 공급 = 명목 선대 × (1 − 우회·체선 흡수율). 붉은 점선은 계선·감속 없이 운임 방어가 어려워지는 구간(88%)으로, 이 모델의 판단 기준입니다.</p>'
++ lineChart(series, yrs, {lo:0.80, hi:0.96, step:0.04, thr:M.oversupplyLine,
+    thrLabel:"과포화선 "+Math.round(M.oversupplyLine*100)+"%", aria:"시나리오별 실효 가동률 추이"})
++ '<div class="lgd">' + order.map(function(k,i){
+    return '<span><i style="background:'+SER[i]+'"></i>'+esc(sc[k].name)+' — '+esc(sc[k].desc)+'</span>'; }).join("")
++ '</div></div>';
+
+/* chart 3 — charter rates */
+var rrows = F.rates.map(function(r){
+return {x:r.label, v:r.value, lab:"$"+(r.value/1000)+"k", tip:r.label+" · $"+r.value.toLocaleString()+"/day — "+r.note,
+        c:(r.value>=100000?SER[0]:SER[1])};
+});
+html += '<div class="chartbox"><h3>6,500 CEU 정기용선료 — 이미 고점 대비 3분의 1</h3>'
++ '<p class="cap">2023년 11월 피크에서 2025년 12월까지의 조정 폭. 같은 기간 선가는 7%만 내려(7,000 CEU LNG 레디 약 9천만 달러) 수익과 자산가격의 괴리가 벌어졌습니다.</p>'
++ barChart(rrows, {fmtAxis:function(v){return "$"+Math.round(v/1000)+"k";}, aria:"자동차운반선 정기용선료 추이"})
++ '</div>';
+
+/* table view (relief rule) */
+html += '<div class="chartbox"><h3>연도별 수치 — 전체 표</h3>'
++ '<p class="cap">차트의 근거 수치입니다. 붉게 표시된 칸이 과포화선 아래입니다.</p><div class="fc-tblwrap"><table class="fc-tbl"><thead><tr><th>구분</th>'
++ yrs.map(function(y){return '<th>'+y+'</th>';}).join("") + '</tr></thead><tbody>';
+html += '<tr><td>인도 척수</td>' + yrs.map(function(y){
+  return '<td>'+(M.deliveries.ships[y]!=null?M.deliveries.ships[y]+"척":"—")+'</td>'; }).join("") + '</tr>';
+order.forEach(function(k,i){
+html += '<tr><td>가동률 · '+esc(sc[k].name)+'</td>' + yrs.map(function(y){
+  var v=sc[k].util[y];
+  return '<td class="'+(v<M.oversupplyLine?"warn":"")+'">'+(Math.round(v*1000)/10)+'%</td>'; }).join("") + '</tr>';
+});
+html += '<tr><td>선대 (만 CEU) · 기준</td>' + yrs.map(function(y){
+  return '<td>'+(sc.B.fleetCEU[y]/10000).toFixed(1)+'</td>'; }).join("") + '</tr>';
+html += '<tr><td>흡수율 · 기준</td>' + yrs.map(function(y){
+  return '<td>'+Math.round(sc.B.absorb[y]*100)+'%</td>'; }).join("") + '</tr>';
+html += '<tr><td>수요 증가율 · 기준</td>' + yrs.map(function(y){
+  var d=sc.B.demandGrowth[y];
+  return '<td>'+(d==null?"—":"+"+Math.round(d*1000)/10+"%")+'</td>'; }).join("") + '</tr>';
+html += '</tbody></table></div></div>';
+
+/* evidence */
+html += '<section class="sec"><h2>근거</h2><div class="grid">';
+F.evidence.forEach(function(e){
+html += '<div class="card"><div class="top"><span class="code">근거</span><span class="meta">'+esc(e.src)+' · '+esc(e.date)+'</span></div>'
++ '<h3>'+esc(e.title)+'</h3>'
++ '<div class="fig">📊 '+esc(e.fig)+'</div>'
++ '<p>'+esc(e.body)+'</p>'
++ '<div class="src">🔗 <a href="'+esc(e.url)+'" target="_blank" rel="noopener">출처</a></div></div>';
+});
+html += '</div></section>';
+
+/* watchlist */
+html += '<div class="chartbox watch"><h3>이 예측이 틀렸는지 알려줄 지표</h3><ul>';
+F.watchlist.forEach(function(w){
+var cls = w.w.indexOf("높")>=0 ? "h" : (w.w.indexOf("중")>=0 ? "m" : "l");
+html += '<li><b>'+esc(w.k)+'</b><span class="wt '+cls+'">'+esc(w.w)+'</span><br>'+esc(w.note)+'</li>';
+});
+html += '</ul></div>';
+
+/* caveats */
+html += '<div class="chartbox"><h3>가정과 한계</h3><ul class="fc-note" style="padding-left:18px;margin:0">';
+F.caveats.forEach(function(c){ html += '<li style="margin-bottom:7px">'+esc(c)+'</li>'; });
+html += '</ul><p class="fc-note">기준일 '+esc(kr?F.updatedKR:F.updatedEN)+' · 모델·해석은 이 사이트가 공개 자료를 종합해 작성한 것으로, 투자 판단의 근거로 쓰기 위한 것이 아닙니다.</p></div>';
+
+main.innerHTML = html;
+bindChartHover();
+}
+
 function render(){
+if(viewMode==="forecast") return renderForecast();
 if(viewMode==="tonnage") return renderTonnage();
 if(viewMode==="all") return renderAll();
 return renderDay();
@@ -448,6 +682,7 @@ else { location.reload(); }
 /* ---------- nav chips ---------- */
 function buildNav(){
 var nav = document.getElementById("catNav");
+if(viewMode==="forecast"){ nav.innerHTML = ""; return; }
 if(viewMode==="tonnage"){
 if(!tonnage){ nav.innerHTML = ""; return; }
 nav.innerHTML = tonnage.groups.map(function(g){
@@ -474,20 +709,35 @@ setTimeout(function(){ var el=document.getElementById(pre+code); if(el) el.scrol
 
 /* ---------- view tabs ---------- */
 function paintTabs(){
-document.getElementById("tabDaily").classList.toggle("on", viewMode!=="tonnage");
+document.getElementById("tabDaily").classList.toggle("on", viewMode!=="tonnage" && viewMode!=="forecast");
 document.getElementById("tabTon").classList.toggle("on", viewMode==="tonnage");
-document.getElementById("dateSel").style.display = (viewMode==="tonnage") ? "none" : "";
+document.getElementById("tabFc").classList.toggle("on", viewMode==="forecast");
+document.getElementById("dateSel").style.display = (viewMode==="tonnage"||viewMode==="forecast") ? "none" : "";
+document.getElementById("search").style.display = (viewMode==="forecast") ? "none" : "";
 document.getElementById("tabDailyTxt").textContent = (lang==="KR") ? "일일 다이제스트" : "Daily Digest";
 document.getElementById("tabTonTxt").textContent = (lang==="KR") ? "선복량·건조량" : "Tonnage";
+document.getElementById("tabFcTxt").textContent = (lang==="KR") ? "Forecast" : "Forecast";
+}
+function showForecast(){
+if(viewMode==="forecast") return;
+viewMode = "forecast"; allCode = null; allItems = [];
+paintTabs(); document.getElementById("catNav").innerHTML = "";
+if(forecast){ render(); }
+else {
+document.getElementById("main").innerHTML = '<div class="empty">'+(lang==="KR"?"전망 데이터 불러오는 중…":"Loading forecast…")+'</div>';
+loadForecast(function(d){ forecast = d; render(); });
+}
+try{window.scrollTo({top:0,behavior:"smooth"});}catch(e){window.scrollTo(0,0);}
 }
 function showDaily(){
-if(viewMode!=="tonnage") return;
+if(viewMode!=="tonnage" && viewMode!=="forecast") return;
 viewMode = "day"; allCode = null; allItems = [];
 paintTabs(); buildNav(); render();
 try{window.scrollTo({top:0,behavior:"smooth"});}catch(e){window.scrollTo(0,0);}
 }
 function showTonnage(){
 if(viewMode==="tonnage") return;
+fcTipHide();
 viewMode = "tonnage"; allCode = null; allItems = [];
 paintTabs();
 document.getElementById("catNav").innerHTML = "";
@@ -521,6 +771,7 @@ document.getElementById("btnEN").addEventListener("click", function(){ setLang("
 sel.addEventListener("change", function(){ selectDate(sel.value); });
 document.getElementById("tabDaily").addEventListener("click", showDaily);
 document.getElementById("tabTon").addEventListener("click", showTonnage);
+document.getElementById("tabFc").addEventListener("click", showForecast);
 paintTabs();
 var brand = document.getElementById("brandHome");
 if(brand){
