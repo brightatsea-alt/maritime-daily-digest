@@ -57,6 +57,15 @@ transition:background .15s,color .15s,border-color .15s}
 .chip.tonchip{background:var(--h1);color:#fff;border-color:var(--h1)}
 .chip.tonchip:hover{background:var(--h2);border-color:var(--h2)}
 
+/* Forecast segment pills */
+.fc-segs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.fc-seg{appearance:none;font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;
+background:#fff;color:var(--h1);border:2px solid var(--line);border-radius:999px;padding:8px 18px;
+transition:background .15s,border-color .15s,color .15s}
+.fc-seg:hover{border-color:var(--h2);background:var(--chip)}
+.fc-seg.on{background:var(--h1);border-color:var(--h1);color:#fff}
+.fc-seg .sg-ico{margin-right:5px}
+
 /* Forecast tab */
 .fc-verdict{background:linear-gradient(135deg,#1F4E79,#2E75B6);color:#fff;border-radius:14px;
 padding:22px 24px;margin-bottom:20px}
@@ -318,6 +327,12 @@ t.style.left = x + "px"; t.style.top = y + "px";
 }
 function fcTipHide(){ document.getElementById("fcTip").style.display = "none"; }
 
+function fcAxis(kind, v){
+if(kind==="usd") return "$"+Math.round(v/1000)+"k";
+if(kind==="pctv") return (Math.round(v*10)/10)+"%";
+return Math.round(v);
+}
+
 /* grouped/simple column chart — one series, direct labels on every bar */
 function barChart(rows, opt){
 var W=760, H=opt.h||230, L=44, R=14, T=18, B=34;
@@ -328,7 +343,7 @@ var g = '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(opt.aria||o
 [0,.25,.5,.75,1].forEach(function(f){
 var y = T+ih-ih*f;
 g += '<line x1="'+L+'" y1="'+y+'" x2="'+(W-R)+'" y2="'+y+'" stroke="#eef1f6" stroke-width="1"/>';
-g += '<text x="'+(L-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="10.5" fill="#8b93a3">'+opt.fmtAxis(max*f)+'</text>';
+g += '<text x="'+(L-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="10.5" fill="#8b93a3">'+fcAxis(opt.axis, max*f)+'</text>';
 });
 rows.forEach(function(r,i){
 var h = ih*(r.v/max), x = L + gap*i + (gap-bw)/2, y = T+ih-h;
@@ -388,108 +403,83 @@ el.addEventListener("mouseleave", fcTipHide);
 });
 }
 
+var fcSeg = 0;
+
+function fcTable(c){
+var h = '<div class="fc-tblwrap"><table class="fc-tbl"><thead><tr>'
+      + c.head.map(function(x){ return '<th>'+esc(x)+'</th>'; }).join("") + '</tr></thead><tbody>';
+c.rows.forEach(function(r){
+h += '<tr>' + r.map(function(cell){
+var v = (cell && typeof cell==="object") ? cell.v : cell;
+var wn = (cell && typeof cell==="object" && cell.warn) ? ' class="warn"' : '';
+return '<td'+wn+'>'+esc(v)+'</td>';
+}).join("") + '</tr>';
+});
+return h + '</tbody></table></div>';
+}
+
+function fcChart(c){
+var h = '<div class="chartbox"><h3>'+esc(c.title)+'</h3><p class="cap">'+esc(c.cap)+'</p>';
+if(c.type==="bar"){
+h += barChart(c.rows, {axis:c.axis, aria:c.title});
+} else if(c.type==="line"){
+h += lineChart(c.series, c.years, {lo:c.lo, hi:c.hi, step:c.step, thr:c.thr, thrLabel:c.thrLabel, aria:c.title});
+h += '<div class="lgd">' + c.series.map(function(sr){
+return '<span><i style="background:'+sr.c+'"></i>'+esc(sr.name)+(sr.desc?(' — '+esc(sr.desc)):'')+'</span>'; }).join("") + '</div>';
+} else if(c.type==="table"){
+h += fcTable(c);
+}
+return h + '</div>';
+}
+
 function renderForecast(){
 var main = document.getElementById("main");
-if(!forecast){ main.innerHTML='<div class="empty">전망 데이터를 불러오지 못했습니다.</div>'; return; }
-var F=forecast, M=F.model, A=M.anchors, yrs=M.years, sc=M.scenarios;
-var order=["B","A","C"];
-var kr=(lang==="KR");
+if(!forecast || !forecast.segments || !forecast.segments.length){
+main.innerHTML='<div class="empty">전망 데이터를 불러오지 못했습니다.</div>'; return; }
+if(fcSeg >= forecast.segments.length) fcSeg = 0;
+var F = forecast, sg = F.segments[fcSeg], kr = (lang==="KR");
 
-var html = '<div class="fc-verdict"><h2>'+esc(kr?F.verdict.headline:F.verdict.headlineEN)+'</h2>';
-if(kr){
-html += '<p class="lead">'+esc(F.verdict.lead)+'</p><ul>';
-F.verdict.bullets.forEach(function(b){ html += '<li>'+esc(b)+'</li>'; });
-html += '</ul>';
-}
-html += '</div>';
+var html = '<div class="fc-segs">' + F.segments.map(function(x,i){
+return '<button class="fc-seg'+(i===fcSeg?" on":"")+'" onclick="setFcSeg('+i+')">'
+     + '<span class="sg-ico">'+esc(x.icon)+'</span>'+esc(kr?x.name:x.nameEN)+'</button>'; }).join("") + '</div>';
 
-html += '<div class="fc-kpis">'
-+ '<div class="fc-kpi"><b>'+sc.B.crossYear+'</b><span>기준 시나리오 과포화 전환</span><em>실효 가동률이 '+Math.round(M.oversupplyLine*100)+'% 아래로</em></div>'
-+ '<div class="fc-kpi"><b>'+A.fleetShips2025+'척</b><span>운항 중 PCTC</span><em>약 '+(A.fleetCEU2025/10000).toFixed(0)+'만 CEU (역산 추정)</em></div>'
-+ '<div class="fc-kpi"><b>'+Math.round(A.orderbookPctCapacity*100)+'%</b><span>수주잔량 / 선대</span><em>'+A.orderbookShips2025+'척 · 벌크선 14%의 2.5배</em></div>'
-+ '<div class="fc-kpi"><b>67 → 26척</b><span>인도 2026 → 2028</span><em>공급 압력의 정점은 올해</em></div>'
-+ '</div>';
+html += '<div class="fc-verdict"><h2>'+esc(sg.verdict.headline)+'</h2>'
+     +  '<p class="lead">'+esc(sg.verdict.lead)+'</p><ul>'
+     +  sg.verdict.bullets.map(function(b){ return '<li>'+esc(b)+'</li>'; }).join("")
+     +  '</ul></div>';
 
-/* chart 1 — deliveries */
-var drows = yrs.slice(1).map(function(y){
-var n=M.deliveries.ships[y], c=M.deliveries.ceu[y];
-return {x:String(y), x2:(y>=2029?"추정":""), v:n, lab:n+"척",
-        c:(y>=2029?"#9ab6d4":SER[0]),
-        tip:y+"년 인도 "+n+"척 · 약 "+Math.round(c/1000)+"천 CEU"+(y>=2029?" (2026년 발주분 배분 추정)":"")};
-});
-html += '<div class="chartbox"><h3>연도별 인도 척수 — 압력의 정점은 2026년</h3>'
-+ '<p class="cap">2023~2028년 인도 예정 276척 중 약 80%가 중국 건조. 2029~2030년(연회색)은 2026년에 확인된 발주를 인도 시점으로 배분한 추정치입니다.</p>'
-+ barChart(drows, {fmtAxis:function(v){return Math.round(v);}, aria:"연도별 자동차운반선 인도 척수"})
-+ '</div>';
+html += '<div class="fc-kpis">' + sg.kpis.map(function(k){
+return '<div class="fc-kpi"><b>'+esc(k.b)+'</b><span>'+esc(k.s)+'</span><em>'+esc(k.e)+'</em></div>'; }).join("") + '</div>';
 
-/* chart 2 — utilisation */
-var series = order.map(function(k,i){
-return {name:sc[k].name, c:SER[i], v:yrs.map(function(y){ return sc[k].util[y]; })};
-});
-html += '<div class="chartbox"><h3>시나리오별 실효 가동률과 과포화 전환점</h3>'
-+ '<p class="cap">실효 공급 = 명목 선대 × (1 − 우회·체선 흡수율). 붉은 점선은 계선·감속 없이 운임 방어가 어려워지는 구간(88%)으로, 이 모델의 판단 기준입니다.</p>'
-+ lineChart(series, yrs, {lo:0.80, hi:0.96, step:0.04, thr:M.oversupplyLine,
-    thrLabel:"과포화선 "+Math.round(M.oversupplyLine*100)+"%", aria:"시나리오별 실효 가동률 추이"})
-+ '<div class="lgd">' + order.map(function(k,i){
-    return '<span><i style="background:'+SER[i]+'"></i>'+esc(sc[k].name)+' — '+esc(sc[k].desc)+'</span>'; }).join("")
-+ '</div></div>';
+sg.charts.forEach(function(c){ html += fcChart(c); });
 
-/* chart 3 — charter rates */
-var rrows = F.rates.map(function(r){
-return {x:r.label, v:r.value, lab:"$"+(r.value/1000)+"k", tip:r.label+" · $"+r.value.toLocaleString()+"/day — "+r.note,
-        c:(r.value>=100000?SER[0]:SER[1])};
-});
-html += '<div class="chartbox"><h3>6,500 CEU 정기용선료 — 이미 고점 대비 3분의 1</h3>'
-+ '<p class="cap">2023년 11월 피크에서 2025년 12월까지의 조정 폭. 같은 기간 선가는 7%만 내려(7,000 CEU LNG 레디 약 9천만 달러) 수익과 자산가격의 괴리가 벌어졌습니다.</p>'
-+ barChart(rrows, {fmtAxis:function(v){return "$"+Math.round(v/1000)+"k";}, aria:"자동차운반선 정기용선료 추이"})
-+ '</div>';
-
-/* table view (relief rule) */
-html += '<div class="chartbox"><h3>연도별 수치 — 전체 표</h3>'
-+ '<p class="cap">차트의 근거 수치입니다. 붉게 표시된 칸이 과포화선 아래입니다.</p><div class="fc-tblwrap"><table class="fc-tbl"><thead><tr><th>구분</th>'
-+ yrs.map(function(y){return '<th>'+y+'</th>';}).join("") + '</tr></thead><tbody>';
-html += '<tr><td>인도 척수</td>' + yrs.map(function(y){
-  return '<td>'+(M.deliveries.ships[y]!=null?M.deliveries.ships[y]+"척":"—")+'</td>'; }).join("") + '</tr>';
-order.forEach(function(k,i){
-html += '<tr><td>가동률 · '+esc(sc[k].name)+'</td>' + yrs.map(function(y){
-  var v=sc[k].util[y];
-  return '<td class="'+(v<M.oversupplyLine?"warn":"")+'">'+(Math.round(v*1000)/10)+'%</td>'; }).join("") + '</tr>';
-});
-html += '<tr><td>선대 (만 CEU) · 기준</td>' + yrs.map(function(y){
-  return '<td>'+(sc.B.fleetCEU[y]/10000).toFixed(1)+'</td>'; }).join("") + '</tr>';
-html += '<tr><td>흡수율 · 기준</td>' + yrs.map(function(y){
-  return '<td>'+Math.round(sc.B.absorb[y]*100)+'%</td>'; }).join("") + '</tr>';
-html += '<tr><td>수요 증가율 · 기준</td>' + yrs.map(function(y){
-  var d=sc.B.demandGrowth[y];
-  return '<td>'+(d==null?"—":"+"+Math.round(d*1000)/10+"%")+'</td>'; }).join("") + '</tr>';
-html += '</tbody></table></div></div>';
-
-/* evidence */
 html += '<section class="sec"><h2>근거</h2><div class="grid">';
-F.evidence.forEach(function(e){
+sg.evidence.forEach(function(e){
 html += '<div class="card"><div class="top"><span class="code">근거</span><span class="meta">'+esc(e.src)+' · '+esc(e.date)+'</span></div>'
-+ '<h3>'+esc(e.title)+'</h3>'
-+ '<div class="fig">📊 '+esc(e.fig)+'</div>'
-+ '<p>'+esc(e.body)+'</p>'
++ '<h3>'+esc(e.title)+'</h3><div class="fig">📊 '+esc(e.fig)+'</div><p>'+esc(e.body)+'</p>'
 + '<div class="src">🔗 <a href="'+esc(e.url)+'" target="_blank" rel="noopener">출처</a></div></div>';
 });
 html += '</div></section>';
 
-/* watchlist */
 html += '<div class="chartbox watch"><h3>이 예측이 틀렸는지 알려줄 지표</h3><ul>';
-F.watchlist.forEach(function(w){
-var cls = w.w.indexOf("높")>=0 ? "h" : (w.w.indexOf("중")>=0 ? "m" : "l");
-html += '<li><b>'+esc(w.k)+'</b><span class="wt '+cls+'">'+esc(w.w)+'</span><br>'+esc(w.note)+'</li>';
+sg.watchlist.forEach(function(x){
+var cls = x.w.indexOf("높")>=0 ? "h" : (x.w.indexOf("중")>=0 ? "m" : "l");
+html += '<li><b>'+esc(x.k)+'</b><span class="wt '+cls+'">'+esc(x.w)+'</span><br>'+esc(x.note)+'</li>';
 });
 html += '</ul></div>';
 
-/* caveats */
 html += '<div class="chartbox"><h3>가정과 한계</h3><ul class="fc-note" style="padding-left:18px;margin:0">';
-F.caveats.forEach(function(c){ html += '<li style="margin-bottom:7px">'+esc(c)+'</li>'; });
-html += '</ul><p class="fc-note">기준일 '+esc(kr?F.updatedKR:F.updatedEN)+' · 모델·해석은 이 사이트가 공개 자료를 종합해 작성한 것으로, 투자 판단의 근거로 쓰기 위한 것이 아닙니다.</p></div>';
+sg.caveats.forEach(function(c){ html += '<li style="margin-bottom:7px">'+esc(c)+'</li>'; });
+html += '</ul><p class="fc-note">기준일 '+esc(kr?F.updatedKR:F.updatedEN)
+     +  ' · 모델·해석은 이 사이트가 공개 자료를 종합해 작성한 것으로, 투자 판단의 근거로 쓰기 위한 것이 아닙니다.</p></div>';
 
 main.innerHTML = html;
 bindChartHover();
+}
+
+function setFcSeg(i){
+fcSeg = i; fcTipHide(); paintTabs(); renderForecast();
+try{window.scrollTo({top:0,behavior:"smooth"});}catch(e){window.scrollTo(0,0);}
 }
 
 function render(){
@@ -716,7 +706,12 @@ document.getElementById("dateSel").style.display = (viewMode==="tonnage"||viewMo
 document.getElementById("search").style.display = (viewMode==="forecast") ? "none" : "";
 document.getElementById("tabDailyTxt").textContent = (lang==="KR") ? "일일 다이제스트" : "Daily Digest";
 document.getElementById("tabTonTxt").textContent = (lang==="KR") ? "선복량·건조량" : "Tonnage";
-document.getElementById("tabFcTxt").textContent = (lang==="KR") ? "Forecast" : "Forecast";
+var fcName = "";
+if(forecast && forecast.segments && forecast.segments[fcSeg]){
+var sgx = forecast.segments[fcSeg];
+fcName = " · " + (sgx.code==="PCTC" ? "PCTC" : (lang==="KR" ? sgx.name : sgx.nameEN));
+}
+document.getElementById("tabFcTxt").textContent = "Forecast" + fcName;
 }
 function showForecast(){
 if(viewMode==="forecast") return;
@@ -725,7 +720,7 @@ paintTabs(); document.getElementById("catNav").innerHTML = "";
 if(forecast){ render(); }
 else {
 document.getElementById("main").innerHTML = '<div class="empty">'+(lang==="KR"?"전망 데이터 불러오는 중…":"Loading forecast…")+'</div>';
-loadForecast(function(d){ forecast = d; render(); });
+loadForecast(function(d){ forecast = d; paintTabs(); render(); });
 }
 try{window.scrollTo({top:0,behavior:"smooth"});}catch(e){window.scrollTo(0,0);}
 }
