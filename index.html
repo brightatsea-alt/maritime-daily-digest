@@ -322,18 +322,19 @@ function srcUrl(it){ return it.url; }
 function cardHtml(it, isAcc){
 var L = LBL[lang];
 var acc = isAcc && (it.kCause!=null || it.eCause!=null);
-var showSum = (lang==="KR") || !!it.eTitle || !!it.eSum;
+var pk = function(kr, en){ return (lang==="KR") ? (kr||en||"") : (en||kr||""); };
 var html = '<div class="card'+(acc?" acc":"")+'">';
 html += '<div class="top"><span class="code">'+esc(it.code)+'</span><span class="meta">'+esc(it.src)+' · '+esc(it._adate||it.date||"")+'</span></div>';
-var ttl = (lang==="KR") ? (it.titleKR || it.title) : (it.title || it.eTitle || "");
+/* two schemas exist in the archive: legacy (title=EN, titleKR=KR) and current (title=KR, eTitle=EN) */
+var ttl = (lang==="KR") ? (it.titleKR || it.title || "") : (it.eTitle || it.title || "");
 html += '<h3>'+esc(ttl)+'</h3>';
 if(acc){
-if(showSum) html += '<p><span class="lab">'+L.iSum+':</span> '+esc(lang==="KR"?it.kSum:it.eSum)+'</p>';
-html += '<p><span class="lab cause">'+L.cause+':</span> '+esc(lang==="KR"?it.kCause:it.eCause)+'</p>';
-html += '<div class="impl"><b>'+L.les+':</b> '+esc(lang==="KR"?it.kLes:it.eLes)+'</div>';
+html += '<p><span class="lab">'+L.iSum+':</span> '+esc(pk(it.kSum,it.eSum))+'</p>';
+html += '<p><span class="lab cause">'+L.cause+':</span> '+esc(pk(it.kCause,it.eCause))+'</p>';
+html += '<div class="impl"><b>'+L.les+':</b> '+esc(pk(it.kLes,it.eLes))+'</div>';
 } else {
-if(showSum) html += '<p><span class="lab">'+L.sum+':</span> '+esc(lang==="KR"?it.kSum:it.eSum)+'</p>';
-html += '<div class="impl"><b>'+L.imp+':</b> '+esc(lang==="KR"?it.kImp:it.eImp)+'</div>';
+html += '<p><span class="lab">'+L.sum+':</span> '+esc(pk(it.kSum,it.eSum))+'</p>';
+html += '<div class="impl"><b>'+L.imp+':</b> '+esc(pk(it.kImp,it.eImp))+'</div>';
 }
 html += '<div class="src">🔗 <a href="'+esc(srcUrl(it))+'" target="_blank" rel="noopener">'+L.src+'</a></div>';
 html += '</div>';
@@ -430,6 +431,56 @@ el.addEventListener("mouseleave", fcTipHide);
 
 var fcSeg = 0;
 
+var FCL = {
+KR:{ev:"근거",evTag:"근거",src:"출처",
+watch:"이 예측이 틀렸는지 알려줄 지표",caveat:"가정과 한계",
+sm:"선박관리사에게 미치는 영향과 전략",
+path:"선복 전망이 관리 사업에 닿는 경로",act:"실행 전략",
+asof:"기준일 ",
+note:" · 모델·해석은 이 사이트가 공개 자료를 종합해 작성한 것으로, 투자 판단의 근거로 쓰기 위한 것이 아닙니다.",
+fail:"전망 데이터를 불러오지 못했습니다."},
+EN:{ev:"Evidence",evTag:"Evidence",src:"Source",
+watch:"Indicators that would show this forecast is wrong",caveat:"Assumptions and limitations",
+sm:"Impact on ship managers, and what to do about it",
+path:"How the tonnage outlook reaches the management business",act:"Actions",
+asof:"As of ",
+note:" · This model and its interpretation are compiled by this site from public sources and are not intended as a basis for investment decisions.",
+fail:"Could not load the forecast data."}
+};
+
+/* pick the EN value when the language is EN and a translation exists */
+function fx(kr, en){ return (lang==="EN" && en) ? en : kr; }
+function fxa(kr, en){ return (lang==="EN" && en && en.length) ? en : kr; }
+
+/* return a language-localised shallow copy of a chart spec */
+function fcLocal(c){
+if(lang!=="EN") return c;
+var o={}, k;
+for(k in c) o[k]=c[k];
+o.title = c.titleEN || c.title;
+o.cap   = c.capEN   || c.cap;
+if(c.type==="bar"){
+o.rows = c.rows.map(function(r){
+var q={}, j; for(j in r) q[j]=r[j];
+q.x = r.xEN || r.x;
+if(r.x2 !== undefined) q.x2 = (r.x2EN !== undefined && r.x2EN !== "") ? r.x2EN : r.x2;
+q.lab = r.labEN || r.lab;
+q.tip = r.tipEN || r.tip;
+return q; });
+} else if(c.type==="line"){
+o.thrLabel = c.thrLabelEN || c.thrLabel;
+o.series = c.series.map(function(sr){
+var q={}, j; for(j in sr) q[j]=sr[j];
+q.name = sr.nameEN || sr.name;
+q.desc = sr.descEN || sr.desc;
+return q; });
+} else if(c.type==="table"){
+o.head = (c.headEN && c.headEN.length) ? c.headEN : c.head;
+o.rows = (c.rowsEN && c.rowsEN.length) ? c.rowsEN : c.rows;
+}
+return o;
+}
+
 function fcTable(c){
 var h = '<div class="fc-tblwrap"><table class="fc-tbl"><thead><tr>'
       + c.head.map(function(x){ return '<th>'+esc(x)+'</th>'; }).join("") + '</tr></thead><tbody>';
@@ -443,7 +494,8 @@ return '<td'+wn+'>'+esc(v)+'</td>';
 return h + '</tbody></table></div>';
 }
 
-function fcChart(c){
+function fcChart(c0){
+var c = fcLocal(c0);
 var h = '<div class="chartbox"><h3>'+esc(c.title)+'</h3><p class="cap">'+esc(c.cap)+'</p>';
 if(c.type==="bar"){
 h += barChart(c.rows, {axis:c.axis, aria:c.title});
@@ -459,64 +511,64 @@ return h + '</div>';
 
 function renderForecast(){
 var main = document.getElementById("main");
+var kr = (lang==="KR"), T = FCL[kr?"KR":"EN"];
 if(!forecast || !forecast.segments || !forecast.segments.length){
-main.innerHTML='<div class="empty">전망 데이터를 불러오지 못했습니다.</div>'; return; }
+main.innerHTML='<div class="empty">'+T.fail+'</div>'; return; }
 if(fcSeg >= forecast.segments.length) fcSeg = 0;
-var F = forecast, sg = F.segments[fcSeg], kr = (lang==="KR");
+var F = forecast, sg = F.segments[fcSeg];
 
 var html = '<div class="fc-segs">' + F.segments.map(function(x,i){
 return '<button class="fc-seg'+(i===fcSeg?" on":"")+'" onclick="setFcSeg('+i+')">'
      + '<span class="sg-ico">'+esc(x.icon)+'</span>'+esc(kr?x.name:x.nameEN)+'</button>'; }).join("") + '</div>';
 
-html += '<div class="fc-verdict"><h2>'+esc(sg.verdict.headline)+'</h2>'
-     +  '<p class="lead">'+esc(sg.verdict.lead)+'</p><ul>'
-     +  sg.verdict.bullets.map(function(b){ return '<li>'+esc(b)+'</li>'; }).join("")
+html += '<div class="fc-verdict"><h2>'+esc(fx(sg.verdict.headline, sg.verdict.headlineEN))+'</h2>'
+     +  '<p class="lead">'+esc(fx(sg.verdict.lead, sg.verdict.leadEN))+'</p><ul>'
+     +  fxa(sg.verdict.bullets, sg.verdict.bulletsEN).map(function(b){ return '<li>'+esc(b)+'</li>'; }).join("")
      +  '</ul></div>';
 
 html += '<div class="fc-kpis">' + sg.kpis.map(function(k){
-return '<div class="fc-kpi"><b>'+esc(k.b)+'</b><span>'+esc(k.s)+'</span><em>'+esc(k.e)+'</em></div>'; }).join("") + '</div>';
+return '<div class="fc-kpi"><b>'+esc(fx(k.b,k.bEN))+'</b><span>'+esc(fx(k.s,k.sEN))+'</span><em>'+esc(fx(k.e,k.eEN))+'</em></div>'; }).join("") + '</div>';
 
 sg.charts.forEach(function(c){ html += fcChart(c); });
 
 if(sg.impact || sg.strategy){
-html += '<div class="sm-wrap"><h3>선박관리사에게 미치는 영향과 전략</h3>';
+html += '<div class="sm-wrap"><h3>'+T.sm+'</h3>';
 if(sg.impact){
-html += '<p class="intro">'+esc(sg.impact.intro)+'</p>';
-html += '<div class="sm-h4">선복 전망이 관리 사업에 닿는 경로</div><div class="sm-imp">';
+html += '<p class="intro">'+esc(fx(sg.impact.intro, sg.impact.introEN))+'</p>';
+html += '<div class="sm-h4">'+T.path+'</div><div class="sm-imp">';
 sg.impact.items.forEach(function(it){
-html += '<div><b>'+esc(it.k)+'</b><span>'+esc(it.v)+'</span></div>'; });
+html += '<div><b>'+esc(fx(it.k,it.kEN))+'</b><span>'+esc(fx(it.v,it.vEN))+'</span></div>'; });
 html += '</div>';
 }
 if(sg.strategy){
-html += '<div class="sm-h4">실행 전략</div><ul class="sm-str">';
+html += '<div class="sm-h4">'+T.act+'</div><ul class="sm-str">';
 sg.strategy.forEach(function(x){
-html += '<li><div class="sm-when">'+esc(x.when)+'</div><div class="sm-body">'
-     +  '<b>'+esc(x.act)+'<span class="sm-tag '+esc(x.tag)+'">'+esc(x.tag)+'</span></b>'
-     +  '<span>'+esc(x.why)+'</span></div></li>'; });
+html += '<li><div class="sm-when">'+esc(fx(x.when,x.whenEN))+'</div><div class="sm-body">'
+     +  '<b>'+esc(fx(x.act,x.actEN))+'<span class="sm-tag '+esc(x.tag)+'">'+esc(fx(x.tag,x.tagEN))+'</span></b>'
+     +  '<span>'+esc(fx(x.why,x.whyEN))+'</span></div></li>'; });
 html += '</ul>';
 }
 html += '</div>';
 }
 
-html += '<section class="sec"><h2>근거</h2><div class="grid">';
+html += '<section class="sec"><h2>'+T.ev+'</h2><div class="grid">';
 sg.evidence.forEach(function(e){
-html += '<div class="card"><div class="top"><span class="code">근거</span><span class="meta">'+esc(e.src)+' · '+esc(e.date)+'</span></div>'
-+ '<h3>'+esc(e.title)+'</h3><div class="fig">📊 '+esc(e.fig)+'</div><p>'+esc(e.body)+'</p>'
-+ '<div class="src">🔗 <a href="'+esc(e.url)+'" target="_blank" rel="noopener">출처</a></div></div>';
+html += '<div class="card"><div class="top"><span class="code">'+T.evTag+'</span><span class="meta">'+esc(e.src)+' · '+esc(e.date)+'</span></div>'
++ '<h3>'+esc(fx(e.title,e.titleEN))+'</h3><div class="fig">📊 '+esc(fx(e.fig,e.figEN))+'</div><p>'+esc(fx(e.body,e.bodyEN))+'</p>'
++ '<div class="src">🔗 <a href="'+esc(e.url)+'" target="_blank" rel="noopener">'+T.src+'</a></div></div>';
 });
 html += '</div></section>';
 
-html += '<div class="chartbox watch"><h3>이 예측이 틀렸는지 알려줄 지표</h3><ul>';
+html += '<div class="chartbox watch"><h3>'+T.watch+'</h3><ul>';
 sg.watchlist.forEach(function(x){
 var cls = x.w.indexOf("높")>=0 ? "h" : (x.w.indexOf("중")>=0 ? "m" : "l");
-html += '<li><b>'+esc(x.k)+'</b><span class="wt '+cls+'">'+esc(x.w)+'</span><br>'+esc(x.note)+'</li>';
+html += '<li><b>'+esc(fx(x.k,x.kEN))+'</b><span class="wt '+cls+'">'+esc(fx(x.w,x.wEN))+'</span><br>'+esc(fx(x.note,x.noteEN))+'</li>';
 });
 html += '</ul></div>';
 
-html += '<div class="chartbox"><h3>가정과 한계</h3><ul class="fc-note" style="padding-left:18px;margin:0">';
-sg.caveats.forEach(function(c){ html += '<li style="margin-bottom:7px">'+esc(c)+'</li>'; });
-html += '</ul><p class="fc-note">기준일 '+esc(kr?F.updatedKR:F.updatedEN)
-     +  ' · 모델·해석은 이 사이트가 공개 자료를 종합해 작성한 것으로, 투자 판단의 근거로 쓰기 위한 것이 아닙니다.</p></div>';
+html += '<div class="chartbox"><h3>'+T.caveat+'</h3><ul class="fc-note" style="padding-left:18px;margin:0">';
+fxa(sg.caveats, sg.caveatsEN).forEach(function(c){ html += '<li style="margin-bottom:7px">'+esc(c)+'</li>'; });
+html += '</ul><p class="fc-note">'+T.asof+esc(kr?F.updatedKR:F.updatedEN)+T.note+'</p></div>';
 
 main.innerHTML = html;
 bindChartHover();
@@ -536,10 +588,11 @@ return renderDay();
 
 function tcardHtml(it){
 var L = LBL[lang];
-var ttl = (lang==="KR") ? it.title : (it.eTitle || it.title);
-var fig = (lang==="KR") ? it.kFig : (it.eFig || it.kFig);
-var sum = (lang==="KR") ? it.kSum : (it.eSum || "");
-var imp = (lang==="KR") ? it.kImp : (it.eImp || "");
+var tp = function(kr, en){ return (lang==="KR") ? (kr||en||"") : (en||kr||""); };
+var ttl = tp(it.title, it.eTitle);
+var fig = tp(it.kFig, it.eFig);
+var sum = tp(it.kSum, it.eSum);
+var imp = tp(it.kImp, it.eImp);
 var html = '<div class="card">';
 html += '<div class="top"><span class="code">'+esc(it.code)+'</span><span class="meta">'+esc(it.src)+' · '+esc(it.date||"")+'</span></div>';
 html += '<h3>'+esc(ttl)+'</h3>';
