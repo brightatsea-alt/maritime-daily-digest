@@ -269,6 +269,14 @@ KR:{date:"발표/시기",sum:"주요 내용",imp:"시사점",iDate:"발생/공�
 EN:{date:"Date/Source",sum:"Summary",imp:"Implication",iDate:"Incident Date",iSum:"Incident Summary",cause:"Probable Cause",les:"Lessons Learned",src:"Source",fig:"Key figures"}
 };
 var lang = "KR";
+/* Korean media names shown in English when the EN view is on */
+var SRC_EN = {"코리아쉬핑가제트":"Korea Shipping Gazette","이데일리":"Edaily","연합":"Yonhap",
+"한국해운조합":"Korea Shipowners' Association","해양수산부":"Korea MOF"};
+function srcTx(v){
+if(lang!=="EN" || !v) return v;
+for(var k in SRC_EN) v = v.split(k).join(SRC_EN[k]);
+return v;
+}
 var current = null;
 var viewMode = "day"; // "day" | "all" | "tonnage"
 var tonnage = null;
@@ -326,7 +334,7 @@ var L = LBL[lang];
 var acc = isAcc && (it.kCause!=null || it.eCause!=null);
 var pk = function(kr, en){ return (lang==="KR") ? (kr||en||"") : (en||kr||""); };
 var html = '<div class="card'+(acc?" acc":"")+'">';
-html += '<div class="top"><span class="code">'+esc(it.code)+'</span><span class="meta">'+esc(it.src)+' · '+esc(it._adate||it.date||"")+'</span></div>';
+html += '<div class="top"><span class="code">'+esc(it.code)+'</span><span class="meta">'+esc(srcTx(it.src))+' · '+esc(it._adate||it.date||"")+'</span></div>';
 /* two schemas exist in the archive: legacy (title=EN, titleKR=KR) and current (title=KR, eTitle=EN) */
 var ttl = (lang==="KR") ? (it.titleKR || it.title || "") : (it.eTitle || it.title || "");
 html += '<h3>'+esc(ttl)+'</h3>';
@@ -555,7 +563,7 @@ html += '</div>';
 
 html += '<section class="sec"><h2>'+T.ev+'</h2><div class="grid">';
 sg.evidence.forEach(function(e){
-html += '<div class="card"><div class="top"><span class="code">'+T.evTag+'</span><span class="meta">'+esc(e.src)+' · '+esc(e.date)+'</span></div>'
+html += '<div class="card"><div class="top"><span class="code">'+T.evTag+'</span><span class="meta">'+esc(srcTx(e.src))+' · '+esc(e.date)+'</span></div>'
 + '<h3>'+esc(fx(e.title,e.titleEN))+'</h3><div class="fig">📊 '+esc(fx(e.fig,e.figEN))+'</div><p>'+esc(fx(e.body,e.bodyEN))+'</p>'
 + '<div class="src">🔗 <a href="'+esc(e.url)+'" target="_blank" rel="noopener">'+T.src+'</a></div></div>';
 });
@@ -596,7 +604,7 @@ var fig = tp(it.kFig, it.eFig);
 var sum = tp(it.kSum, it.eSum);
 var imp = tp(it.kImp, it.eImp);
 var html = '<div class="card">';
-html += '<div class="top"><span class="code">'+esc(it.code)+'</span><span class="meta">'+esc(it.src)+' · '+esc(it.date||"")+'</span></div>';
+html += '<div class="top"><span class="code">'+esc(it.code)+'</span><span class="meta">'+esc(srcTx(it.src))+' · '+esc(it.date||"")+'</span></div>';
 html += '<h3>'+esc(ttl)+'</h3>';
 if(fig) html += '<div class="fig">📊 '+esc(fig)+'</div>';
 if(sum) html += '<p><span class="lab">'+L.sum+':</span> '+esc(sum)+'</p>';
