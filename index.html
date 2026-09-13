@@ -271,7 +271,9 @@ EN:{date:"Date/Source",sum:"Summary",imp:"Implication",iDate:"Incident Date",iSu
 var lang = "KR";
 /* Korean media names shown in English when the EN view is on */
 var SRC_EN = {"코리아쉬핑가제트":"Korea Shipping Gazette","이데일리":"Edaily","연합":"Yonhap",
-"한국해운조합":"Korea Shipowners' Association","해양수산부":"Korea MOF"};
+"한국해운조합":"Korea Shipowners' Association","해양수산부":"Korea MOF",
+"쉬핑뉴스넷":"Shipping Newsnet","서울경제":"Seoul Economic Daily","한국경제":"Korea Economic Daily",
+"매일경제":"Maeil Business","조선일보":"Chosun Ilbo","부산일보":"Busan Ilbo","한국선급":"Korean Register"};
 function srcTx(v){
 if(lang!=="EN" || !v) return v;
 for(var k in SRC_EN) v = v.split(k).join(SRC_EN[k]);
