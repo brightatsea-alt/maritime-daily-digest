@@ -192,6 +192,11 @@ header,nav.cats,.vtabs,.ctrl,.hero .stats{display:none}
 .card{break-inside:avoid;box-shadow:none}
 body{background:#fff}
 }
+
+.kcard .dl{margin-left:auto;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.kcard .dl.urgent{color:#fff;background:#d12f2f;border-color:#d12f2f}
+.kcard .dl.open{opacity:.7;font-weight:600}
+.kcard .top{align-items:center}
 </style>
 </head>
 <body>
@@ -217,6 +222,7 @@ body{background:#fff}
 <button class="vtab on" id="tabDaily"><span class="vt-ico">📰</span><span id="tabDailyTxt">일일 다이제스트</span></button>
 <button class="vtab" id="tabTon"><span class="vt-ico">📊</span><span id="tabTonTxt">선복량·건조량</span></button>
 <button class="vtab" id="tabFc"><span class="vt-ico">🔮</span><span id="tabFcTxt">Forecast</span></button>
+<button class="vtab" id="tabKr"><span class="vt-ico">🇰🇷</span><span id="tabKrTxt">한국 해사동향</span></button>
 </div></div>
 <div id="fcTip"></div>
 
@@ -264,23 +270,25 @@ GAS:{i:"🔥",kr:"가스선",en:"Gas Carriers"},
 YARD:{i:"🏗️",kr:"조선소·건조량",en:"Shipyards"},
 SCRAP:{i:"♻️",kr:"해체·선령",en:"Recycling"}
 };
+var KGRP = {
+NOTICE:{i:"\ud83d\udcdc",kr:"공고·입찰",en:"Notices"},
+POLICY:{i:"\ud83c\udfdb\ufe0f",kr:"지원정책·제도",en:"Policy"},
+PORT:{i:"\u2693",kr:"항만공사",en:"Port Authorities"},
+EVENT:{i:"\ud83d\udcc5",kr:"세미나·컨퍼런스",en:"Events"},
+EDU:{i:"\ud83c\udf93",kr:"교육·자격",en:"Training"},
+ASSOC:{i:"\ud83e\udd1d",kr:"협회·단체",en:"Associations"}
+};
+var KLBL = {
+KR:{posted:"게시",deadline:"마감",sum:"내용",act:"조치",src:"공고 원문",dleft:"D-",today:"오늘 마감",open:"상시"},
+EN:{posted:"Posted",deadline:"Deadline",sum:"Details",act:"Action",src:"Original notice",dleft:"D-",today:"Closes today",open:"Open"}
+};
 var LBL = {
 KR:{date:"발표/시기",sum:"주요 내용",imp:"시사점",iDate:"발생/공개",iSum:"사고 개요",cause:"추정 원인",les:"Lessons Learned",src:"출처",fig:"핵심 수치"},
 EN:{date:"Date/Source",sum:"Summary",imp:"Implication",iDate:"Incident Date",iSum:"Incident Summary",cause:"Probable Cause",les:"Lessons Learned",src:"Source",fig:"Key figures"}
 };
 var lang = "KR";
 /* Korean media names shown in English when the EN view is on */
-var SRC_EN = {"코리아쉬핑가제트":"Korea Shipping Gazette","이데일리":"Edaily","연합":"Yonhap",
-"한국해운조합":"Korea Shipowners' Association","해양수산부":"Korea MOF",
-"쉬핑뉴스넷":"Shipping Newsnet","서울경제":"Seoul Economic Daily","한국경제":"Korea Economic Daily",
-"매일경제":"Maeil Business","조선일보":"Chosun Ilbo","부산일보":"Busan Ilbo","한국선급":"Korean Register",
-"머니투데이":"Money Today","파이낸셜뉴스":"Financial News","이코노미트리뷴":"Economy Tribune",
-"헤럴드경제":"Herald Business","아시아경제":"Asia Economy","뉴시스":"Newsis","뉴스1":"News1",
-"노컷뉴스":"Nocut News","미디어펜":"MediaPen","아주경제":"Aju Business Daily","서울신문":"Seoul Shinmun",
-"ABC뉴스":"ABC News","전자신문":"ETNews","중앙일보":"JoongAng Ilbo","동아일보":"Dong-A Ilbo",
-"데일리시큐":"Daily Secu","머니S":"Money S","이투데이":"Etoday","파이낸셜타임즈":"Financial Times",
-"이코노미스트":"Economist Korea","시사저널e":"Sisa Journal e","한겨레":"Hankyoreh","국민일보":"Kukmin Ilbo",
-"울산신문":"Ulsan Shinmun","보안뉴스":"Boan News","경남신문":"Gyeongnam Shinmun","국제신문":"Kookje Shinmun","핀포인트뉴스":"Pinpoint News"};
+var SRC_EN = {"코리아쉬핑가제트": "Korea Shipping Gazette", "이데일리": "Edaily", "연합": "Yonhap", "한국해운조합": "Korea Shipowners' Association", "해양수산부": "Korea MOF", "쉬핑뉴스넷": "Shipping Newsnet", "서울경제": "Seoul Economic Daily", "한국경제": "Korea Economic Daily", "매일경제": "Maeil Business", "조선일보": "Chosun Ilbo", "부산일보": "Busan Ilbo", "한국선급": "Korean Register", "머니투데이": "Money Today", "파이낸셜뉴스": "Financial News", "이코노미트리뷴": "Economy Tribune", "헤럴드경제": "Herald Business", "아시아경제": "Asia Economy", "뉴시스": "Newsis", "뉴스1": "News1", "노컷뉴스": "Nocut News", "미디어펜": "MediaPen", "아주경제": "Aju Business Daily", "서울신문": "Seoul Shinmun", "ABC뉴스": "ABC News", "전자신문": "ETNews", "중앙일보": "JoongAng Ilbo", "동아일보": "Dong-A Ilbo", "데일리시큐": "Daily Secu", "머니S": "Money S", "이투데이": "Etoday", "파이낸셜타임즈": "Financial Times", "이코노미스트": "Economist Korea", "시사저널e": "Sisa Journal e", "한겨레": "Hankyoreh", "국민일보": "Kukmin Ilbo", "울산신문": "Ulsan Shinmun", "보안뉴스": "Boan News", "경남신문": "Gyeongnam Shinmun", "국제신문": "Kookje Shinmun", "핀포인트뉴스": "Pinpoint News", "글로벌이코노믹": "Global Economic"};
 function srcTx(v){
 if(lang!=="EN" || !v) return v;
 for(var k in SRC_EN) v = v.split(k).join(SRC_EN[k]);
@@ -328,6 +336,19 @@ var s = document.createElement("script");
 s.src = "forecast.js?v=" + Date.now();
 s.onload = function(){ fcLoading=false; cb(window.FORECAST || null); };
 s.onerror = function(){ fcLoading=false; cb(null); };
+document.head.appendChild(s);
+}
+
+var korea = null;
+var krLoading = false;
+function loadKorea(cb){
+if(window.KOREA) return cb(window.KOREA);
+if(krLoading) return;
+krLoading = true;
+var s = document.createElement("script");
+s.src = "korea.js?v=" + Date.now();
+s.onload = function(){ krLoading=false; cb(window.KOREA || null); };
+s.onerror = function(){ krLoading=false; cb(null); };
 document.head.appendChild(s);
 }
 
@@ -600,6 +621,7 @@ try{window.scrollTo({top:0,behavior:"smooth"});}catch(e){window.scrollTo(0,0);}
 
 function render(){
 if(viewMode==="forecast") return renderForecast();
+if(viewMode==="korea") return renderKorea();
 if(viewMode==="tonnage") return renderTonnage();
 if(viewMode==="all") return renderAll();
 return renderDay();
@@ -621,6 +643,74 @@ if(imp) html += '<div class="impl"><b>'+L.imp+':</b> '+esc(imp)+'</div>';
 html += '<div class="src">🔗 <a href="'+esc(it.url)+'" target="_blank" rel="noopener">'+L.src+'</a></div>';
 html += '</div>';
 return html;
+}
+
+
+function dleft(dl){
+if(!dl) return null;
+var p = dl.split("-");
+var end = Date.UTC(+p[0], +p[1]-1, +p[2]);
+var n = new Date(Date.now() + 9*3600000);
+var today = Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate());
+return Math.round((end-today)/86400000);
+}
+function kcardHtml(it){
+var L = KLBL[lang];
+var kp = function(kr,en){ return (lang==="KR") ? (kr||en||"") : (en||kr||""); };
+var d = dleft(it.deadline);
+var badge = "";
+if(it.deadline){
+var cls = (d!=null && d<=7) ? "dl urgent" : "dl";
+var txt = (d!=null && d<=0) ? L.today : (L.dleft + d);
+badge = '<span class="'+cls+'">'+esc(txt)+'</span>';
+} else {
+badge = '<span class="dl open">'+esc(L.open)+'</span>';
+}
+var html = '<div class="card kcard">';
+html += '<div class="top"><span class="code">'+esc((KGRP[it.code]||{i:""}).i+" "+it.code)+'</span>'
+      + '<span class="meta">'+esc(kp(it.org,it.orgEN))+'</span>'+badge+'</div>';
+html += '<h3>'+esc(kp(it.title,it.eTitle))+'</h3>';
+html += '<div class="fig">\u{1F5D3} '+esc(L.posted)+' '+esc(it.date)
+      + (it.deadline ? ' · <b>'+esc(L.deadline)+' '+esc(it.deadline)+'</b>' : '')+'</div>';
+html += '<p><span class="lab">'+L.sum+':</span> '+esc(kp(it.kSum,it.eSum))+'</p>';
+html += '<div class="impl"><b>'+L.act+':</b> '+esc(kp(it.kAct,it.eAct))+'</div>';
+html += '<div class="src">\u{1F517} <a href="'+esc(it.url)+'" target="_blank" rel="noopener">'+L.src+'</a></div>';
+html += '</div>';
+return html;
+}
+
+function renderKorea(){
+var main = document.getElementById("main");
+var q = (document.getElementById("search").value||"").trim().toLowerCase();
+if(!korea){ main.innerHTML='<div class="empty">'+(lang==="KR"?"한국 해사동향 데이터를 불러오지 못했습니다.":"Could not load the Korea tab data.")+'</div>'; return; }
+var urgent = 0;
+korea.groups.forEach(function(g){ g.items.forEach(function(it){ var d=dleft(it.deadline); if(d!=null && d>=0 && d<=14) urgent++; }); });
+var html = '<div class="hero">'
++ '<div><div class="big">'+(lang==="KR"?"\u{1F1F0}\u{1F1F7} 한국 해사동향 — 공고 · 행사 · 지원정책":"\u{1F1F0}\u{1F1F7} Korea Maritime Notices, Events & Support")+'</div>'
++ '<div class="sub">'+(lang==="KR"?"기준일 ":"Updated ")+esc(lang==="KR"?korea.updatedKR:korea.updatedEN)
++ (lang==="KR"
+ ? ' · 해양수산부 / 해양진흥공사 / 항만공사 / 한국해운협회 / 한국선급 / KOMSA 등'
+ : ' · Korea MOF / KOBC / port authorities / Korea Shipowners’ Association / Korean Register / KOMSA')
++ '</div></div>'
++ '<div class="stats"><div class="stat"><b>'+korea.groups.length+'</b><span>'+(lang==="KR"?"분류":"categories")+'</span></div>'
++ '<div class="stat"><b>'+korea.total+'</b><span>'+(lang==="KR"?"항목":"items")+'</span></div>'
++ '<div class="stat"><b>'+urgent+'</b><span>'+(lang==="KR"?"2주내 마감":"due in 14d")+'</span></div></div></div>';
+var shown = 0;
+korea.groups.forEach(function(g){
+var items = g.items.filter(function(it){
+if(!q) return true;
+var hay = (it.title+" "+(it.eTitle||"")+" "+it.org+" "+(it.orgEN||"")+" "+(it.kSum||"")+" "+(it.kAct||"")+" "+it.code).toLowerCase();
+return hay.indexOf(q) >= 0;
+});
+if(!items.length) return;
+shown += items.length;
+html += '<section class="sec" id="ksec-'+g.code+'"><h2>'+esc((KGRP[g.code]||{i:""}).i+" "+(lang==="KR"?g.kTitle:g.eTitle))
++ ' <span style="font-size:12px;color:var(--muted);font-weight:400">('+items.length+')</span></h2><div class="grid">';
+items.forEach(function(it){ html += kcardHtml(it); });
+html += '</div></section>';
+});
+if(!shown) html += '<div class="empty">'+(lang==="KR"?"검색 결과가 없습니다.":"No results.")+'</div>';
+main.innerHTML = html;
 }
 
 function renderTonnage(){
@@ -790,6 +880,14 @@ else { location.reload(); }
 function buildNav(){
 var nav = document.getElementById("catNav");
 if(viewMode==="forecast"){ nav.innerHTML = ""; return; }
+if(viewMode==="korea"){
+if(!korea){ nav.innerHTML = ""; return; }
+nav.innerHTML = korea.groups.map(function(g){
+var c = KGRP[g.code] || {i:"",kr:g.code,en:g.code};
+return '<span class="chip" onclick="gotoSec(\''+g.code+'\')">'+esc(c.i+" "+(lang==="KR"?c.kr:c.en))+'</span>';
+}).join("");
+return;
+}
 if(viewMode==="tonnage"){
 if(!tonnage){ nav.innerHTML = ""; return; }
 nav.innerHTML = tonnage.groups.map(function(g){
@@ -810,19 +908,22 @@ return '<span class="chip" onclick="gotoSec(\''+s.code+'\')">'+esc(c.i+" "+(lang
 function gotoSec(code){
 var pre = "sec-";
 if(viewMode==="tonnage"){ pre = "tsec-"; }
+else if(viewMode==="korea"){ pre = "ksec-"; }
 else if(viewMode==="all"){ exitAll(); }
 setTimeout(function(){ var el=document.getElementById(pre+code); if(el) el.scrollIntoView({behavior:"smooth",block:"start"}); }, 40);
 }
 
 /* ---------- view tabs ---------- */
 function paintTabs(){
-document.getElementById("tabDaily").classList.toggle("on", viewMode!=="tonnage" && viewMode!=="forecast");
+document.getElementById("tabDaily").classList.toggle("on", viewMode!=="tonnage" && viewMode!=="forecast" && viewMode!=="korea");
 document.getElementById("tabTon").classList.toggle("on", viewMode==="tonnage");
 document.getElementById("tabFc").classList.toggle("on", viewMode==="forecast");
-document.getElementById("dateSel").style.display = (viewMode==="tonnage"||viewMode==="forecast") ? "none" : "";
+document.getElementById("tabKr").classList.toggle("on", viewMode==="korea");
+document.getElementById("dateSel").style.display = (viewMode==="tonnage"||viewMode==="forecast"||viewMode==="korea") ? "none" : "";
 document.getElementById("search").style.display = (viewMode==="forecast") ? "none" : "";
 document.getElementById("tabDailyTxt").textContent = (lang==="KR") ? "일일 다이제스트" : "Daily Digest";
 document.getElementById("tabTonTxt").textContent = (lang==="KR") ? "선복량·건조량" : "Tonnage";
+document.getElementById("tabKrTxt").textContent = (lang==="KR") ? "한국 해사동향" : "Korea Notices";
 var fcName = "";
 if(forecast && forecast.segments && forecast.segments[fcSeg]){
 var sgx = forecast.segments[fcSeg];
@@ -841,8 +942,21 @@ loadForecast(function(d){ forecast = d; paintTabs(); render(); });
 }
 try{window.scrollTo({top:0,behavior:"smooth"});}catch(e){window.scrollTo(0,0);}
 }
+function showKorea(){
+if(viewMode==="korea") return;
+fcTipHide();
+viewMode = "korea"; allCode = null; allItems = [];
+paintTabs();
+document.getElementById("catNav").innerHTML = "";
+if(korea){ buildNav(); render(); }
+else {
+document.getElementById("main").innerHTML = '<div class="empty">'+(lang==="KR"?"한국 해사동향 불러오는 중…":"Loading Korea notices…")+'</div>';
+loadKorea(function(d){ korea = d; buildNav(); render(); });
+}
+try{window.scrollTo({top:0,behavior:"smooth"});}catch(e){window.scrollTo(0,0);}
+}
 function showDaily(){
-if(viewMode!=="tonnage" && viewMode!=="forecast") return;
+if(viewMode!=="tonnage" && viewMode!=="forecast" && viewMode!=="korea") return;
 viewMode = "day"; allCode = null; allItems = [];
 paintTabs(); buildNav(); render();
 try{window.scrollTo({top:0,behavior:"smooth"});}catch(e){window.scrollTo(0,0);}
@@ -884,6 +998,7 @@ sel.addEventListener("change", function(){ selectDate(sel.value); });
 document.getElementById("tabDaily").addEventListener("click", showDaily);
 document.getElementById("tabTon").addEventListener("click", showTonnage);
 document.getElementById("tabFc").addEventListener("click", showForecast);
+document.getElementById("tabKr").addEventListener("click", showKorea);
 paintTabs();
 var brand = document.getElementById("brandHome");
 if(brand){
