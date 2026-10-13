@@ -130,15 +130,16 @@ line-height:1.55;padding:8px 11px;border-radius:8px;box-shadow:0 4px 14px rgba(0
 border-radius:8px;padding:7px 10px;margin:0 0 9px;line-height:1.5}
 
 /* Nav chips — max 2 lines */
-nav.cats{background:#fff;border-bottom:1px solid var(--line)}
-.cats-inner{max-width:1180px;margin:0 auto;padding:8px 16px;display:flex;flex-wrap:wrap;gap:7px;max-height:82px;overflow-y:auto}
-.chip{white-space:nowrap;padding:5px 10px;border-radius:999px;background:var(--chip);color:var(--h1);
+/* rows are 31px (19px line + padding + border); 8 + 31 + 6 + 31 = 76px shows exactly two rows */
+nav.cats{background:#fff;border-bottom:1px solid var(--line);padding-bottom:8px}
+.cats-inner{max-width:1180px;margin:0 auto;padding:8px 16px 0;display:flex;flex-wrap:wrap;gap:6px;max-height:78px;overflow-y:auto}
+.chip{white-space:nowrap;padding:5px 9px;line-height:19px;border-radius:999px;background:var(--chip);color:var(--h1);
 font-size:12.5px;font-weight:600;cursor:pointer;border:1px solid transparent}
 .chip:hover{border-color:var(--h2)}
 /* Section with no items on the selected date: still clickable, opens that section's archive */
 .chip.nil{background:#fff;color:#7d889b;border:1px dashed #c3ccda;font-weight:500}
 .chip.nil:hover{color:var(--h1);border:1px solid var(--h2)}
-.chip.on,.chip.nil.on{background:var(--h2);color:#fff;border:1px solid var(--h2);font-weight:700}
+.chip.on,.chip.nil.on{background:var(--h2);color:#fff;border:1px solid var(--h2);font-weight:600}
 .nilnote{background:#fff8e6;border:1px solid #f1dfb0;border-left:5px solid #e0a800;border-radius:10px;
 padding:10px 14px;margin:-8px 0 16px;font-size:13.5px;color:#5a4a1a;line-height:1.6}
 
@@ -388,7 +389,7 @@ var allNil = null;      /* date the archive was opened from when that date had n
 var allLoading = false;
 var allReq = 0;         /* guards against a slower, older archive request overwriting a newer one */
 var DAYS_PER_PAGE = 10; /* archive view: days shown per page */
-var ARCH_PARALLEL = 6;  /* archive view: digest files fetched at the same time */
+var ARCH_PARALLEL = 10; /* archive view: digest files fetched at the same time (HTTP/2) */
 
 /* ---------- loader ---------- */
 /* Archive files use a key that changes only when a new digest date is published,
