@@ -135,6 +135,12 @@ nav.cats{background:#fff;border-bottom:1px solid var(--line)}
 .chip{white-space:nowrap;padding:5px 10px;border-radius:999px;background:var(--chip);color:var(--h1);
 font-size:12.5px;font-weight:600;cursor:pointer;border:1px solid transparent}
 .chip:hover{border-color:var(--h2)}
+/* Section with no items on the selected date: still clickable, opens that section's archive */
+.chip.nil{background:#fff;color:#7d889b;border:1px dashed #c3ccda;font-weight:500}
+.chip.nil:hover{color:var(--h1);border:1px solid var(--h2)}
+.chip.on,.chip.nil.on{background:var(--h2);color:#fff;border:1px solid var(--h2);font-weight:700}
+.nilnote{background:#fff8e6;border:1px solid #f1dfb0;border-left:5px solid #e0a800;border-radius:10px;
+padding:10px 14px;margin:-8px 0 16px;font-size:13.5px;color:#5a4a1a;line-height:1.6}
 
 main{max-width:1180px;margin:0 auto;padding:22px 16px 60px}
 
@@ -260,6 +266,8 @@ HOT:{i:"🔥",kr:"LL 핫토픽",en:"LL Hot Topics"},
 SYS:{i:"🖥️",kr:"System & App",en:"System & App"},
 SMGR:{i:"🏢",kr:"선박관리사",en:"Ship Manager"}
 };
+/* Fixed tab order: every section tab stays visible even on days it has no items */
+var CAT_ORDER = ["TOP","ACC","PSC","PCTC","WW","EE","DIG","TECH","HR","HSEQ","KR","INS","PNI","VET","CLASS","COMM","GEO","TW","HOT","SYS","SMGR"];
 var TGRP = {
 OVW:{i:"🌍",kr:"세계 선대",en:"World Fleet"},
 PCTC:{i:"🚗",kr:"자동차운반선",en:"Car Carriers"},
@@ -376,14 +384,21 @@ var SER = ["#2a78d6","#eb6834","#1baf7a"];   /* validated categorical slots 1-3 
 var allCode = null;
 var allItems = [];
 var allPage = 0;
+var allNil = null;      /* date the archive was opened from when that date had no items in the section */
+var allLoading = false;
+var allReq = 0;         /* guards against a slower, older archive request overwriting a newer one */
 var DAYS_PER_PAGE = 10; /* archive view: days shown per page */
+var ARCH_PARALLEL = 6;  /* archive view: digest files fetched at the same time */
 
 /* ---------- loader ---------- */
-function loadDay(date, cb){
+/* Archive files use a key that changes only when a new digest date is published,
+   so the browser can reuse them between visits; the selected day is always fetched fresh. */
+function archKey(){ var m = window.DIGEST_MANIFEST || []; return (m[0]||"") + "-" + m.length; }
+function loadDay(date, cb, stable){
 window.DIGEST_ARCHIVE = window.DIGEST_ARCHIVE || {};
 if (window.DIGEST_ARCHIVE[date]) return cb(window.DIGEST_ARCHIVE[date]);
 var s = document.createElement("script");
-s.src = "digest-" + date + ".js?v=" + Date.now();
+s.src = "digest-" + date + ".js?v=" + (stable ? archKey() : Date.now());
 s.onload = function(){ cb(window.DIGEST_ARCHIVE[date] || null); };
 s.onerror = function(){ cb(null); };
 document.head.appendChild(s);
@@ -861,6 +876,16 @@ var main = document.getElementById("main");
 var q = (document.getElementById("search").value||"").trim().toLowerCase();
 var cat = CAT[allCode] || {i:"",kr:allCode,en:allCode};
 var name = (lang==="KR"?cat.kr:cat.en);
+var back = '<div style="margin:-6px 0 16px"><button class="backbtn" onclick="exitAll(true)">'+(lang==="KR"?"◀ 돌아가기":"◀ Back")+'</button></div>';
+var note = !allNil ? "" : '<div class="nilnote">'+(lang==="KR"
+? "🗂 "+esc(allNil)+" 다이제스트에는 이 분야 기사가 없습니다. 지난 기사(아카이브)를 최신순으로 보여드립니다."
+: "🗂 No items in this section on "+esc(allNil)+". Showing past items from the archive, newest first.")+'</div>';
+if(allLoading){
+main.innerHTML = '<div class="hero"><div><div class="big">'+esc(cat.i+" "+name)+'</div>'
++ '<div class="sub">'+(lang==="KR"?"아카이브 불러오는 중… ":"Loading the archive… ")+'<b id="allProg"></b></div></div></div>'
++ note + back;
+return;
+}
 var items = allItems.filter(function(it){
 if(!q) return true;
 var hay = (it.title+" "+(it.titleKR||"")+" "+(it.kSum||"")+" "+(it.eSum||"")+" "+it.src+" "+it.code+" "+(it._adate||"")).toLowerCase();
@@ -884,7 +909,7 @@ var html = '<div class="hero"><div><div class="big">'+esc(cat.i+" "+name)+'</div
 + (rangeTxt?(' · '+esc(rangeTxt)):'')+'</div></div>'
 + '<div class="stats"><div class="stat"><b>'+items.length+'</b><span>'+(lang==="KR"?"기사":"items")+'</span></div>'
 + '<div class="stat"><b>'+dates.length+'</b><span>'+(lang==="KR"?"일자":"days")+'</span></div></div></div>';
-html += '<div style="margin:-6px 0 16px"><button class="backbtn" onclick="exitAll()">'+(lang==="KR"?"◀ 돌아가기":"◀ Back")+'</button></div>';
+html += note + back;
 if(!pageItems.length){ html += '<div class="empty">'+(lang==="KR"?"데이터가 없습니다.":"No data.")+'</div>'; main.innerHTML=html; return; }
 pageDates.forEach(function(d){
 var dItems = pageItems.filter(function(it){ return (it._adate||it.date||"")===d; });
@@ -912,12 +937,26 @@ return h;
 
 function gotoAllPage(p){ allPage = p; render(); try{window.scrollTo({top:0,behavior:"smooth"});}catch(e){window.scrollTo(0,0);} }
 
-/* ---------- aggregate one category across the whole archive (date ascending) ---------- */
-function loadAllForCode(code, cb){
-var dates = (window.DIGEST_MANIFEST||[]).slice().sort();
-var acc = [], i = 0;
-(function next(){
-if(i >= dates.length){
+/* ---------- aggregate one category across the whole archive ---------- */
+/* Fetches up to ARCH_PARALLEL digest files at a time (newest first), then collects the
+   section oldest-first so a story repeated on several dates is kept under its first date. */
+function loadAllForCode(code, cb, onProg){
+var dates = (window.DIGEST_MANIFEST||[]).slice().sort().reverse();
+var N = dates.length, next = 0, active = 0, done = 0, finished = false;
+function finish(){
+if(finished) return; finished = true;
+var acc = [];
+dates.slice().reverse().forEach(function(d){
+var dg = window.DIGEST_ARCHIVE && window.DIGEST_ARCHIVE[d];
+if(!dg || !dg.sections) return;
+for(var j=0;j<dg.sections.length;j++){
+var s = dg.sections[j];
+if(s.code === code){
+(s.items||[]).forEach(function(it){ var o={}; for(var k in it) o[k]=it[k]; o._adate=d; acc.push(o); });
+break;
+}
+}
+});
 var seen = {}, uniq = [];
 acc.forEach(function(it){ var k=(it.url||"").split("?")[0]; if(seen[k]) return; seen[k]=1; uniq.push(it); });
 uniq.sort(function(a,b){
@@ -925,30 +964,56 @@ if(a._adate > b._adate) return -1;
 if(a._adate < b._adate) return 1;
 return String(b.date||"").localeCompare(String(a.date||""));
 });
-return cb(uniq);
+cb(uniq);
 }
-var d = dates[i++];
-loadDay(d, function(dg){
-if(dg && dg.sections){
-for(var j=0;j<dg.sections.length;j++){
-var s = dg.sections[j];
-if(s.code === code){
-s.items.forEach(function(it){ var o={}; for(var k in it) o[k]=it[k]; o._adate=d; acc.push(o); });
-break;
+function pump(){
+while(active < ARCH_PARALLEL && next < N){
+active++;
+loadDay(dates[next++], function(){
+active--; done++;
+if(onProg) onProg(done, N);
+if(done >= N) finish(); else pump();
+}, true);
 }
 }
-}
-next();
-});
-})();
+if(!N) return finish();
+pump();
 }
 
-function viewAll(code){
-viewMode = "all"; allCode = code; allPage = 0;
-document.getElementById("main").innerHTML = '<div class="empty">전체 아카이브 불러오는 중… / Loading archive…</div>';
-loadAllForCode(code, function(items){ allItems = items; render(); try{window.scrollTo({top:0,behavior:"smooth"});}catch(e){window.scrollTo(0,0);} });
+function hasSec(code){
+if(!current || !current.sections) return 0;
+for(var i=0;i<current.sections.length;i++){ var s=current.sections[i]; if(s.code===code) return (s.items||[]).length; }
+return 0;
 }
-function exitAll(){ viewMode = "day"; allCode = null; allItems = []; render(); }
+function scrollTop(){ try{window.scrollTo({top:0,behavior:"smooth"});}catch(e){window.scrollTo(0,0);} }
+function viewAll(code){
+var my = ++allReq;
+viewMode = "all"; allCode = code; allPage = 0; allItems = []; allLoading = true;
+allNil = hasSec(code) ? null : (current && current.date) || null;
+paintTabs(); buildNav(); render(); scrollTop();
+loadAllForCode(code, function(items){
+if(my !== allReq || viewMode !== "all") return;
+allItems = items; allLoading = false; render();
+}, function(done, total){
+if(my !== allReq) return;
+var el = document.getElementById("allProg"); if(el) el.textContent = done + " / " + total;
+});
+}
+function exitAll(top){
+allReq++; viewMode = "day"; allCode = null; allItems = []; allNil = null; allLoading = false;
+paintTabs(); buildNav(); render();
+if(top) scrollTop();
+}
+/* Daily section tabs: with items on the selected date → jump to that section;
+   without items → open that section's archive. In the archive view every tab switches the archive. */
+function catClick(code){
+if(viewMode==="all"){
+if(allCode===code){ scrollTop(); return; }
+return viewAll(code);
+}
+if(hasSec(code) && document.getElementById("sec-"+code)) return gotoSec(code);
+viewAll(code);   /* no items that day, or hidden by the search filter */
+}
 
 /* ---------- brand -> refresh + initial screen ---------- */
 function goHome(){
@@ -979,9 +1044,15 @@ return '<span class="chip" onclick="gotoSec(\''+g.code+'\')">'+esc(c.i+" "+(lang
 return;
 }
 if(!current){ nav.innerHTML = ""; return; }
-nav.innerHTML = current.sections.map(function(s){
-var c = CAT[s.code] || {i:"",kr:s.code,en:s.code};
-return '<span class="chip" onclick="gotoSec(\''+s.code+'\')">'+esc(c.i+" "+(lang==="KR"?c.kr:c.en))+'</span>';
+var codes = CAT_ORDER.slice();
+current.sections.forEach(function(s){ if(codes.indexOf(s.code) < 0) codes.push(s.code); });
+nav.innerHTML = codes.map(function(code){
+var c = CAT[code] || {i:"",kr:code,en:code};
+var n = hasSec(code);
+var cls = "chip" + (n ? "" : " nil") + ((viewMode==="all" && allCode===code) ? " on" : "");
+var tip = n ? (lang==="KR" ? "이 날짜 기사 "+n+"건" : n+" item"+(n>1?"s":"")+" on this date")
+            : (lang==="KR" ? "이 날짜에는 기사 없음 — 눌러서 지난 기사(아카이브) 보기" : "No items on this date — click to open the archive");
+return '<span class="'+cls+'" title="'+esc(tip)+'" onclick="catClick(\''+code+'\')">'+esc(c.i+" "+(lang==="KR"?c.kr:c.en))+'</span>';
 }).join("")
 + '<span class="chip tonchip" onclick="showTonnage()" title="'
 + (lang==="KR"?"선복량·건조량 탭으로 이동":"Go to the Tonnage tab")+'">'
@@ -1038,6 +1109,7 @@ loadKorea(function(d){ korea = d; buildNav(); render(); });
 try{window.scrollTo({top:0,behavior:"smooth"});}catch(e){window.scrollTo(0,0);}
 }
 function showDaily(){
+if(viewMode==="all"){ exitAll(true); return; }
 if(viewMode!=="tonnage" && viewMode!=="forecast" && viewMode!=="korea") return;
 viewMode = "day"; allCode = null; allItems = [];
 paintTabs(); buildNav(); render();
@@ -1065,7 +1137,7 @@ document.getElementById("btnEN").classList.toggle("on", l==="EN");
 paintTabs(); buildNav(); render();
 }
 function selectDate(d){
-loadDay(d, function(dg){ current = dg; viewMode = "day"; allCode=null; paintTabs(); buildNav(); render(); });
+loadDay(d, function(dg){ current = dg; viewMode = "day"; allCode=null; allItems=[]; allNil=null; allLoading=false; allReq++; paintTabs(); buildNav(); render(); });
 }
 
 /* ---------- init ---------- */
