@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FormFill — 문서 → 서식 자동 기입</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="logo">▣</span>
+    <div><h1>FormFill</h1><p>왼쪽에 자료를 넣고, 오른쪽에 서식을 올리면 — 서식 그대로 채워서 돌려줍니다.</p></div>
+  </div>
+  <div class="top-right">
+    <span id="apiStatus" class="pill">서버 확인 중…</span>
+    <button id="btnPw" class="ghost small" hidden>비밀번호</button>
+    <button id="btnReset" class="ghost small" title="페이지를 새로 고치면 모든 파일이 지워집니다">전체 초기화</button>
+  </div>
+</header>
+
+<main id="rows"></main>
+
+<template id="rowTpl">
+  <section class="row">
+    <div class="row-head"><span class="row-no"></span><span class="row-title">작업 <b class="n"></b></span><span class="row-state"></span></div>
+    <div class="panes">
+      <div class="pane left">
+        <div class="pane-head"><h2>① 자료 (출처 문서)</h2><span class="hint">Word · Excel · HWP/HWPX · PDF · PPT · 메일(.eml/.msg) · 텍스트 · 이미지</span></div>
+        <div class="drop src-drop" tabindex="0">
+          <input type="file" class="src-input" multiple hidden>
+          <p><b>파일을 끌어다 놓거나 클릭</b>해서 추가 — 여러 개 가능, 누적 보관됩니다</p>
+        </div>
+        <div class="paste">
+          <textarea class="paste-text" rows="4" placeholder="메일 본문·메모 등 텍스트를 붙여 넣고 [텍스트 추가]"></textarea>
+          <button class="btn-add-text small">텍스트 추가</button>
+        </div>
+        <div class="priority">
+          <label>우선 반영 내용 <span class="hint">— 여기 적은 내용은 다른 자료보다 우선 적용됩니다</span></label>
+          <textarea class="priority-text" rows="3" placeholder="예: 선박명은 ASIAN CAPTAIN, 보고일자는 2026-10-22로 기재"></textarea>
+        </div>
+        <ul class="src-list"></ul>
+        <div class="src-sum"></div>
+      </div>
+      <div class="pane right">
+        <div class="pane-head"><h2>② 채울 서식</h2><span class="hint">docx · xlsx · pptx · hwpx · hwp · PDF(폼) · txt — 형식 그대로 유지</span></div>
+        <div class="drop tpl-drop" tabindex="0">
+          <input type="file" class="tpl-input" hidden>
+          <p><b>서식 파일 1개</b>를 끌어다 놓거나 클릭</p>
+        </div>
+        <div class="tpl-info" hidden>
+          <div class="tpl-name"></div>
+          <div class="tpl-meta"></div>
+          <details class="tpl-view"><summary>서식 구조 보기</summary><pre></pre></details>
+        </div>
+        <div class="lang">
+          <span class="lbl">기입 언어</span>
+          <label><input type="radio" name="__LANG__" value="auto" checked> 서식 그대로</label>
+          <label><input type="radio" name="__LANG__" value="ko"> 한글</label>
+          <label><input type="radio" name="__LANG__" value="en"> 영어</label>
+          <label><input type="radio" name="__LANG__" value="both"> 영·한 병행</label>
+        </div>
+        <div class="hint-box"><input type="text" class="hint-text" placeholder="추가 지시 (선택) — 예: 날짜는 2026.10.22 형식, 선박명은 영문 대문자"></div>
+        <div class="actions">
+          <button class="btn-fill primary" disabled>▶ 자료로 서식 채우기</button>
+          <button class="btn-download" hidden>⬇ 채워진 파일 다운로드</button>
+          <button class="btn-reapply ghost small" hidden>수정값 반영 후 다시 만들기</button>
+        </div>
+        <div class="progress" hidden><div class="bar"></div><span class="msg"></span></div>
+        <div class="result" hidden>
+          <div class="notes"></div>
+          <div class="unresolved"></div>
+          <details class="preview"><summary>채워진 내용 미리보기</summary><pre></pre></details>
+          <details class="edits" open><summary>기입된 항목 <b class="cnt"></b> — 값을 직접 고칠 수 있습니다</summary>
+            <table><thead><tr><th>위치</th><th>원래 내용</th><th>기입 값</th></tr></thead><tbody></tbody></table>
+          </details>
+        </div>
+      </div>
+    </div>
+  </section>
+</template>
+
+<footer class="foot">업로드한 파일은 브라우저 안에서만 처리되며 서버에 저장되지 않습니다. 자료 텍스트만 Claude API로 전송됩니다. 페이지를 새로 고치면 모두 지워집니다.</footer>
+
+<script src="vendor/jszip.min.js"></script>
+<script src="vendor/cfb.min.js"></script>
+<script src="vendor/pako.min.js"></script>
+<script src="vendor/pdf-lib.min.js"></script>
+<script src="vendor/pdf.min.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
