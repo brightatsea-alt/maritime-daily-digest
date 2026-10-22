@@ -583,6 +583,10 @@ return g + '</svg>';
 /* multi-series line chart with a threshold rule, direct end labels and hover */
 function lineChart(series, years, opt){
 var W=760, H=270, L=46, R=104, T=18, B=32;
+/* widen the right margin so long end labels (e.g. English names) are not clipped */
+var tw=function(s){ s=String(s||""); var w=0; for(var i=0;i<s.length;i++){ w += /[ㄱ-힝]/.test(s.charAt(i)) ? 11.6 : 6.8; } return w; };
+series.forEach(function(s){ R=Math.max(R, Math.ceil(tw(s.name))+16); });
+R=Math.max(R, Math.ceil(tw(opt.thrLabel))+12);
 var iw=W-L-R, ih=H-T-B;
 var lo=opt.lo, hi=opt.hi;
 var X=function(i){ return L + iw*(i/(years.length-1)); };
@@ -600,16 +604,24 @@ g += '<text x="'+X(i)+'" y="'+(T+ih+18)+'" text-anchor="middle" font-size="11.5"
 var ty=Y(opt.thr);
 g += '<line x1="'+L+'" y1="'+ty+'" x2="'+(W-R)+'" y2="'+ty+'" stroke="#b3261e" stroke-width="2" stroke-dasharray="6 4"/>';
 g += '<text x="'+(W-R+6)+'" y="'+(ty+4)+'" font-size="11" font-weight="700" fill="#b3261e">'+esc(opt.thrLabel)+'</text>';
-var hits = "";
+var hits = "", last=years.length-1, labs=[], thrY=ty+4;
 series.forEach(function(s,si){
 var d = years.map(function(yr,i){ return (i?"L":"M")+X(i)+" "+Y(s.v[i]); }).join(" ");
 g += '<path d="'+d+'" fill="none" stroke="'+s.c+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
 years.forEach(function(yr,i){
 g += '<circle cx="'+X(i)+'" cy="'+Y(s.v[i])+'" r="4" fill="'+s.c+'" stroke="#fff" stroke-width="2"/>';
-hits += '<circle class="fcpt" data-t="'+esc(s.name+" · "+yr+" · 가동률 "+(Math.round(s.v[i]*1000)/10)+"%")+'" cx="'+X(i)+'" cy="'+Y(s.v[i])+'" r="8" fill="transparent"/>';
+hits += '<circle class="fcpt" data-t="'+esc(s.name+" · "+yr+(lang==="EN"?" · utilisation ":" · 가동률 ")+(Math.round(s.v[i]*1000)/10)+"%")+'" cx="'+X(i)+'" cy="'+Y(s.v[i])+'" r="8" fill="transparent"/>';
 });
-var last=years.length-1;
-g += '<text x="'+(X(last)+9)+'" y="'+(Y(s.v[last])+4)+'" font-size="11.5" font-weight="700" fill="'+s.c+'">'+esc(s.name)+'</text>';
+labs.push({n:s.name, c:s.c, y:Y(s.v[last])+4});
+});
+/* keep end labels apart from each other and from the threshold label */
+for(var it=0; it<4; it++){
+labs.forEach(function(lb){ var dl=lb.y-thrY; if(Math.abs(dl)<13) lb.y = thrY + (dl<0?-13:13); });
+labs.sort(function(a,b){ return a.y-b.y; });
+for(var li=1; li<labs.length; li++){ if(labs[li].y-labs[li-1].y<14) labs[li].y = labs[li-1].y+14; }
+}
+labs.forEach(function(lb){
+g += '<text x="'+(X(last)+9)+'" y="'+lb.y+'" font-size="11.5" font-weight="700" fill="'+lb.c+'">'+esc(lb.n)+'</text>';
 });
 g += hits;
 g += '<line x1="'+L+'" y1="'+(T+ih)+'" x2="'+(W-R)+'" y2="'+(T+ih)+'" stroke="#c9d2de" stroke-width="1"/>';
