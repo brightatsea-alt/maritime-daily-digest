@@ -188,6 +188,16 @@ border-radius:8px;font-size:13px;font-weight:700;cursor:pointer}
 .pager .pg:disabled{opacity:.4;cursor:default}
 .pager .pg-ell{color:var(--muted);padding:0 2px}
 
+/* six view tabs: compact labels on tablets, then a horizontally scrolling tab strip (as on phones) */
+@media (max-width:1023px){
+.vtab{padding:10px 13px;font-size:13.5px}
+.vtab .vt-ico{margin-right:4px}
+}
+@media (max-width:900px){
+.vtabs-inner{overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.vtabs-inner::-webkit-scrollbar{display:none}
+.vtab{flex:0 0 auto;white-space:nowrap;top:0}
+}
 @media (max-width:640px){
 .grid{grid-template-columns:1fr}
 #search{width:130px}
@@ -219,10 +229,44 @@ padding:1px 7px;white-space:nowrap}
 .ww-top a.hd{flex:1 1 auto;min-width:0;font-size:14px;font-weight:700;color:var(--ink);line-height:1.5;cursor:pointer}
 .ww-top a.hd:hover{color:var(--link);text-decoration:underline}
 .ww-top .d{flex:0 0 auto;font-size:11.5px;color:var(--muted);white-space:nowrap}
-.wcard .pri{font-size:10.5px;font-weight:800;color:#fff;background:#b3261e;border-radius:5px;padding:1px 6px}
-.wcard.flash{box-shadow:0 0 0 3px #ffd34d}
+.wcard .pri,.hcard .pri{font-size:10.5px;font-weight:800;color:#fff;background:#b3261e;border-radius:5px;padding:1px 6px}
+.wcard.flash,.hcard.flash{box-shadow:0 0 0 3px #ffd34d}
 .chip.wwchip{background:#0f3d63;color:#fff;border-color:#0f3d63}
 .chip.wwchip:hover{background:var(--h2);border-color:var(--h2)}
+
+/* HR · Leadership & Communication tab */
+.hcard .top{flex-wrap:wrap}
+.mar-b{font-size:10.5px;font-weight:800;color:var(--h1);background:#e3eef9;border:1px solid #c5d9ee;
+border-radius:5px;padding:0 6px;white-space:nowrap}
+.htags{display:flex;flex-wrap:wrap;gap:5px;margin:-2px 0 9px}
+.hchip{font-size:11px;font-weight:600;color:var(--h1);background:var(--chip);border:1px solid var(--line);
+border-radius:999px;padding:1px 8px;white-space:nowrap}
+.hfilter{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.hfilter .fc-seg{font-size:13px;padding:7px 15px}
+.hfilter .fc-seg .cnt{font-weight:600;opacity:.75;margin-left:4px}
+.hguide{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--h2);border-radius:12px;
+padding:12px 18px;margin-bottom:24px;scroll-margin-top:120px}
+.hguide summary{cursor:pointer;font-weight:800;color:var(--h1);font-size:15px;line-height:1.5}
+.hguide summary .hint{font-size:12px;font-weight:400;color:var(--muted);margin-left:6px}
+.hguide .gwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:12px 0 10px}
+.hguide table{border-collapse:collapse;width:100%;font-size:12.5px;line-height:1.55}
+.hguide th,.hguide td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+.hguide th{background:var(--chip);color:var(--h1);font-weight:700;white-space:nowrap}
+.hguide td.nm{font-weight:700;white-space:nowrap}
+.hguide td.nm small{display:block;font-weight:400;color:var(--muted);font-size:11px}
+.hguide .gnote{font-size:12.5px;color:#37425a;line-height:1.65;margin:8px 0}
+.hguide h4{margin:14px 0 6px;font-size:13px;color:var(--h2)}
+.hguide ul.kw{margin:0 0 8px;padding-left:18px;font-size:12.5px;line-height:1.7;color:#37425a}
+.hguide ul.kw b{color:var(--ink)}
+@media (max-width:640px){
+.hguide{padding:12px 14px}
+.hguide table,.hguide thead,.hguide tbody,.hguide tr,.hguide th,.hguide td{display:block}
+.hguide thead{display:none}
+.hguide tr{border:1px solid var(--line);border-radius:10px;margin-bottom:10px;padding:6px 10px}
+.hguide td{border:none;padding:3px 0}
+.hguide td.nm{white-space:normal}
+.hguide td[data-l]::before{content:attr(data-l);display:block;font-size:11px;font-weight:700;color:var(--h2)}
+}
 @media (max-width:640px){
 .vtabs-inner{overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .vtabs-inner::-webkit-scrollbar{display:none}
@@ -259,6 +303,7 @@ padding:1px 7px;white-space:nowrap}
 <button class="vtab" id="tabTon"><span class="vt-ico">📊</span><span id="tabTonTxt">선복량·건조량</span></button>
 <button class="vtab" id="tabFc"><span class="vt-ico">🔮</span><span id="tabFcTxt">Forecast</span></button>
 <button class="vtab" id="tabKr"><span class="vt-ico">🇰🇷</span><span id="tabKrTxt">한국 해사동향</span></button>
+<button class="vtab" id="tabHr"><span class="vt-ico">👥</span><span id="tabHrTxt">HR·리더십·소통</span></button>
 </div></div>
 <div id="fcTip"></div>
 
@@ -330,6 +375,78 @@ LOG:{i:"🏗️",kr:"물류·터미널",en:"Logistics"}
 var WLBL = {
 KR:{sum:"주요 내용",imp:"선박관리·사업 시사점",src:"출처",key:"핵심"},
 EN:{sum:"Summary",imp:"Ship management & business impact",src:"Source",key:"Key"}
+};
+/* HR · Leadership & Communication tab (added 2026-10-28) — groups in display order */
+var HGRP = {
+FRONT:{i:"🧭",kr:"현장 리더십",en:"Frontline leadership"},
+SAFE:{i:"🗣️",kr:"심리적 안전·스피크업",en:"Psychological safety & speak-up"},
+XCOMM:{i:"🌐",kr:"다문화·선박-육상 소통",en:"Cross-cultural & ship-shore communication"},
+CHANGE:{i:"🔄",kr:"변화관리·업무 혁신·AI",en:"Change, work innovation & AI"},
+ENGAGE:{i:"🤝",kr:"참여·웰빙·인재 유지",en:"Engagement, wellbeing & retention"},
+HRPOL:{i:"📋",kr:"HR 제도·동향",en:"HR policy & trends"}
+};
+var HGRP_ORDER = ["FRONT","SAFE","XCOMM","CHANGE","ENGAGE","HRPOL"];
+var HTAG = {
+PS:{kr:"심리적 안전",en:"Psychological safety"},
+SPEAK:{kr:"스피크업·보고",en:"Speak-up"},
+JUST:{kr:"Just culture",en:"Just culture"},
+XC:{kr:"다문화 소통",en:"Cross-cultural"},
+SS:{kr:"선박-육상 소통",en:"Ship-shore comms"},
+CHG:{kr:"변화관리",en:"Change management"},
+FL:{kr:"현장 리더십",en:"Frontline leadership"},
+BRM:{kr:"BRM·팀워크",en:"BRM & teamwork"},
+ENG:{kr:"참여·몰입",en:"Engagement"},
+RET:{kr:"채용·유지",en:"Hiring & retention"},
+WELL:{kr:"웰빙·정신건강",en:"Wellbeing"},
+WR:{kr:"일하는 방식",en:"Work redesign"},
+AI:{kr:"AI 도입",en:"AI adoption"},
+TRN:{kr:"교육·역량",en:"Training"},
+DI:{kr:"다양성·포용",en:"Diversity & inclusion"},
+POL:{kr:"제도·규제",en:"Policy & regulation"}
+};
+var HLBL = {
+KR:{sum:"주요 내용",imp:"💡 HSEQ·선박관리 적용",src:"출처",key:"핵심",mar:"⚓ 해사"},
+EN:{sum:"Summary",imp:"💡 How to apply in ship management",src:"Source",key:"Key",mar:"⚓ Maritime"}
+};
+/* the six recommended sources and the HSEQ search keywords (as the user listed them) */
+var HGUIDE = {
+src:[
+{n:"DBR 동아비즈니스리뷰",nEN:"DBR (Dong-A Business Review)",h:"dbr.donga.com",u:"https://dbr.donga.com/",
+ c:"한국·한국어",cEN:"Korea · Korean",f:"리더십, 조직관리, 경영 혁신",fEN:"Leadership, organisation management, management innovation",
+ use:"국내 기업 사례, 팀 운영, 성과관리, AI를 활용한 업무 개선",useEN:"Korean company cases, team management, performance management, and using AI to improve work"},
+{n:"HR Insight",nEN:"HR Insight",h:"hrinsight.co.kr",u:"https://www.hrinsight.co.kr/",
+ c:"한국·한국어",cEN:"Korea · Korean",f:"HR, 인재육성, 조직문화",fEN:"HR, talent development, organisational culture",
+ use:"인사담당자 실무, 직원 몰입, 리더 교육, 조직문화 개선 사례",useEN:"Hands-on HR practice, employee engagement, leader training, and culture-improvement cases"},
+{n:"Harvard Business Review — HBR",nEN:"Harvard Business Review - HBR",h:"hbr.org",u:"https://hbr.org/",
+ c:"미국·영어",cEN:"US · English",f:"리더십, 커뮤니케이션, 혁신",fEN:"Leadership, communication, innovation",
+ use:"리더십과 비즈니스 커뮤니케이션을 함께 공부하기 좋은 경영 매체",useEN:"A management publication for studying leadership and business communication together"},
+{n:"SHRM",nEN:"SHRM",h:"shrm.org",u:"https://www.shrm.org/",
+ c:"미국·영어",cEN:"US · English",f:"HR 전문정보, 인재관리, 변화관리",fEN:"Professional HR information, talent management, change management",
+ use:"HR 체계, 리더 개발, 조직 변화 과정의 소통을 살펴보기 좋음",useEN:"HR frameworks, leader development, and communication during organisational change"},
+{n:"MIT Sloan Management Review",nEN:"MIT Sloan Management Review",h:"sloanreview.mit.edu",u:"https://sloanreview.mit.edu/",
+ c:"미국·영어",cEN:"US · English",f:"업무 혁신, AI, 조직 설계",fEN:"Work innovation, AI, organisation design",
+ use:"AI 도입, 일하는 방식 개선, 현장 직원의 혁신 참여, 변화 리더십",useEN:"AI adoption, better ways of working, frontline staff taking part in innovation, change leadership"},
+{n:"HR Dive",nEN:"HR Dive",h:"hrdive.com",u:"https://www.hrdive.com/",
+ c:"미국·영어",cEN:"US · English",f:"HR 뉴스·동향",fEN:"HR news and trends",
+ use:"채용·직원관리·AI와 인력 관련 이슈를 뉴스 형태로 빠르게 확인",useEN:"Quick news-style updates on hiring, people management, and AI and the workforce"}
+],
+head:["사이트","국가·언어","주요 분야","활용하기 좋은 내용"],
+headEN:["Site","Country · language","Focus","Best used for"],
+top3:"우선 3개만 보신다면: DBR + HBR + HR Insight — 한국 기업 사례, 글로벌 리더십·소통, HR 실무를 골고루. AI와 업무 혁신이 더 중요하면 MIT Sloan Management Review 추가.",
+top3EN:"If you follow only three: DBR + HBR + HR Insight - a balanced mix of Korean company cases, global leadership and communication, and HR practice. Add MIT Sloan Management Review if AI and work innovation matter more.",
+smr:"MIT Sloan Management Review 참고: MIT Sloan은 2026년 가을호를 끝으로 인쇄판을 끝내고 정규 디지털 콘텐츠도 2026년 11월까지만 낸다고 밝혔다(2026년 9월 10일 발표). 기존 기사 아카이브는 계속 공개되고, 올겨울 디지털 전용 후속 매체가 나올 예정이다. 이번 수집에서는 MIT SMR 기사 페이지에 접근할 수 없어 MIT SMR 항목이 없다.",
+smrEN:"Note on MIT Sloan Management Review: MIT Sloan says print ends after the fall 2026 issue and regular digital content runs only through November 2026 (announced 10 September 2026). The article archive stays online, and a digital-only successor is planned for this winter. Its article pages could not be reached for this collection, so there are no MIT SMR items yet.",
+kwH:"🔎 HSEQ·선박관리 업무에 연결해서 읽을 때 유용한 검색어",
+kwHEN:"🔎 Search keywords that link the reading to HSEQ and ship management work",
+kw:[
+["Psychological safety / Speak-up culture","위험이나 실수를 편하게 보고하는 조직문화","a culture where people can report risks and mistakes without fear"],
+["Cross-cultural communication","다국적 선원·육상 직원 간 소통","communication between multinational crews and shore staff"],
+["Change management","새로운 절차·시스템 도입과 정착","introducing new procedures and systems and making them stick"],
+["Frontline leadership","선장·기관장·현장 책임자의 리더십","leadership by masters, chief engineers and frontline supervisors"],
+["Employee engagement / Work redesign","직원 참여와 일하는 방식 개선","employee involvement and better ways of working"]
+],
+mar:"해사 보완 소스: The Nautical Institute, CHIRP Maritime, The Mission to Seafarers, ISWAN, P&I 손해예방 자료, 사고조사 보고서(MAIB 등), 해사 전문지",
+marEN:"Maritime sources added: The Nautical Institute, CHIRP Maritime, The Mission to Seafarers, ISWAN, P&I loss-prevention material, accident investigation reports (MAIB and others), maritime trade press"
 };
 var KLBL = {
 KR:{posted:"게시",deadline:"마감",sum:"내용",act:"조치",src:"공고 원문",dleft:"D-",today:"오늘 마감",open:"상시"},
@@ -422,14 +539,15 @@ var SRC_EN = {"코리아쉬핑가제트": "Korea Shipping Gazette",
  "창업일보": "Changup Ilbo",
  "로이슈": "Lawissue",
  "M이코노미뉴스": "M Economy News",
- "한국금융신문": "Korea Financial Newspaper"};
+ "한국금융신문": "Korea Financial Newspaper",
+ "남도일보": "Namdo Ilbo"};
 function srcTx(v){
 if(lang!=="EN" || !v) return v;
 for(var k in SRC_EN) v = v.split(k).join(SRC_EN[k]);
 return v;
 }
 var current = null;
-var viewMode = "day"; // "day" | "all" | "tonnage"
+var viewMode = "day"; // "day" | "all" | "tonnage" | "forecast" | "korea" | "ww" | "hr"
 var tonnage = null;
 var tonLoading = false;
 var forecast = null;
@@ -513,6 +631,21 @@ var s = document.createElement("script");
 s.src = "walwil.js?v=" + Date.now();
 s.onload = function(){ wwLoading=false; cb(window.WALWIL || null); };
 s.onerror = function(){ wwLoading=false; cb(null); };
+document.head.appendChild(s);
+}
+
+var hr = null;
+var hrLoading = false;
+var hrFilter = "all";     /* "all" | "mar" (maritime only) | "gen" (general management only) */
+var hrGuideOpen = false;  /* keeps the sources/keywords box open across re-renders */
+function loadHr(cb){
+if(window.HRLEAD) return cb(window.HRLEAD);
+if(hrLoading) return;
+hrLoading = true;
+var s = document.createElement("script");
+s.src = "hrlead.js?v=" + Date.now();
+s.onload = function(){ hrLoading=false; cb(window.HRLEAD || null); };
+s.onerror = function(){ hrLoading=false; cb(null); };
 document.head.appendChild(s);
 }
 
@@ -799,6 +932,7 @@ function render(){
 if(viewMode==="forecast") return renderForecast();
 if(viewMode==="korea") return renderKorea();
 if(viewMode==="ww") return renderWw();
+if(viewMode==="hr") return renderHr();
 if(viewMode==="tonnage") return renderTonnage();
 if(viewMode==="all") return renderAll();
 return renderDay();
@@ -955,6 +1089,147 @@ var u = ww.top[i].url;
 var s = document.getElementById("search");
 if(s.value){ s.value = ""; render(); }
 var cards = document.querySelectorAll(".wcard");
+for(var j=0;j<cards.length;j++){
+if(cards[j].getAttribute("data-u")===u){
+var el = cards[j];
+el.scrollIntoView({behavior:"smooth",block:"center"});
+el.classList.add("flash"); setTimeout(function(){ el.classList.remove("flash"); }, 1800);
+return;
+}
+}
+}
+
+/* ---------- HR · Leadership & Communication tab ---------- */
+function hrGroups(){
+if(!hr || !hr.groups) return [];
+var rank = function(c){ var i = HGRP_ORDER.indexOf(c); return i<0 ? 99 : i; };
+return hr.groups.slice().sort(function(a,b){ return rank(a.code)-rank(b.code); });
+}
+function hrAllItems(){
+var a = [];
+hrGroups().forEach(function(g){ (g.items||[]).forEach(function(it){ a.push(it); }); });
+return a;
+}
+function hrPass(it){
+if(hrFilter==="mar") return !!it.mar;
+if(hrFilter==="gen") return !it.mar;
+return true;
+}
+function hrHay(it){
+var tg = (it.tags||[]).map(function(t){ var x=HTAG[t]; return x ? (x.kr+" "+x.en) : ""; }).join(" ");
+return (it.title+" "+(it.eTitle||"")+" "+(it.kSum||"")+" "+(it.eSum||"")+" "+(it.kImp||"")+" "+(it.eImp||"")+" "+it.src+" "+it.code+" "+tg).toLowerCase();
+}
+function hcardHtml(it){
+var L = HLBL[lang];
+var kp = function(kr,en){ return (lang==="KR") ? (kr||en||"") : (en||kr||""); };
+var g = HGRP[it.code] || {i:"",kr:it.code,en:it.code};
+var html = '<div class="card hcard" data-u="'+esc(it.url)+'">';
+html += '<div class="top"><span class="code">'+esc(g.i+" "+it.code)+'</span>'
++ (it.prio>=3 ? '<span class="pri">'+esc(L.key)+'</span>' : '')
++ (it.mar ? '<span class="mar-b">'+esc(L.mar)+'</span>' : '')
++ '<span class="meta">'+esc(srcTx(it.src))+' · '+esc(it.date||"")+'</span></div>';
+html += '<h3>'+esc(kp(it.title,it.eTitle))+'</h3>';
+var tags = (it.tags||[]).filter(function(t){ return HTAG[t]; });
+if(tags.length){
+html += '<div class="htags">' + tags.map(function(t){ return '<span class="hchip">'+esc(lang==="KR"?HTAG[t].kr:HTAG[t].en)+'</span>'; }).join("") + '</div>';
+}
+html += '<p><span class="lab">'+L.sum+':</span> '+esc(kp(it.kSum,it.eSum))+'</p>';
+html += '<div class="impl"><b>'+L.imp+':</b> '+esc(kp(it.kImp,it.eImp))+'</div>';
+html += '<div class="src">\u{1F517} <a href="'+esc(it.url)+'" target="_blank" rel="noopener">'+L.src+'</a></div>';
+html += '</div>';
+return html;
+}
+function hrGuideHtml(){
+var kr = (lang==="KR"), G = HGUIDE;
+var head = kr ? G.head : G.headEN;
+var h = '<details class="hguide" id="hsec-GUIDE"'+(hrGuideOpen?' open':'')+' ontoggle="hrGuideOpen=this.open">'
++ '<summary>'+(kr?"📚 추천 소스 6곳 · 검색 키워드":"📚 Six recommended sources and search keywords")
++ '<span class="hint">'+(kr?"HR·리더십·커뮤니케이션·업무 혁신을 꾸준히 보기 위한 매체":"Publications for following HR, leadership, communication and work innovation")+'</span></summary>';
+h += '<div class="gwrap"><table><thead><tr>' + head.map(function(x){ return '<th>'+esc(x)+'</th>'; }).join("") + '</tr></thead><tbody>';
+G.src.forEach(function(s){
+h += '<tr><td class="nm"><a href="'+esc(s.u)+'" target="_blank" rel="noopener">'+esc(kr?s.n:s.nEN)+'</a><small>'+esc(s.h)+'</small></td>'
++ '<td data-l="'+esc(head[1])+'">'+esc(kr?s.c:s.cEN)+'</td>'
++ '<td data-l="'+esc(head[2])+'">'+esc(kr?s.f:s.fEN)+'</td>'
++ '<td data-l="'+esc(head[3])+'">'+esc(kr?s.use:s.useEN)+'</td></tr>';
+});
+h += '</tbody></table></div>';
+h += '<p class="gnote">⭐ '+esc(kr?G.top3:G.top3EN)+'</p>';
+if(G.smr) h += '<p class="gnote">ℹ️ '+esc(kr?G.smr:G.smrEN)+' <a href="https://mitsloan.mit.edu/press/update-mit-sloan-management-review" target="_blank" rel="noopener">'+(kr?"MIT Sloan 발표문":"MIT Sloan announcement")+'</a></p>';
+h += '<h4>'+esc(kr?G.kwH:G.kwHEN)+'</h4><ul class="kw">';
+G.kw.forEach(function(k){ h += '<li><b>'+esc(k[0])+'</b> — '+esc(kr?k[1]:k[2])+'</li>'; });
+h += '</ul>';
+h += '<p class="gnote">⚓ '+esc(kr?G.mar:G.marEN)+'</p>';
+return h + '</details>';
+}
+function renderHr(){
+var main = document.getElementById("main");
+var q = (document.getElementById("search").value||"").trim().toLowerCase();
+var kr = (lang==="KR");
+if(!hr){ main.innerHTML='<div class="empty">'+(kr?"HR·리더십·소통 탭 데이터를 불러오지 못했습니다.":"Could not load the HR & Leadership tab data.")+'</div>'; return; }
+var groups = hrGroups(), all = hrAllItems();
+var nMar = all.filter(function(it){ return it.mar; }).length;
+var nGrp = groups.filter(function(g){ return (g.items||[]).length; }).length;
+var html = '<div class="hero">'
++ '<div><div class="big">'+(kr?"👥 HR·리더십·소통 — 해사 리더십·커뮤니케이션 중심":"👥 HR, Leadership & Communication - maritime focus")+'</div>'
++ '<div class="sub">'+(kr?"기준일 ":"Updated ")+esc(kr?(hr.updatedKR||hr.updated):(hr.updatedEN||hr.updated))
++ (kr
+ ? ' · 해사 전문지·기관 / DBR · HR Insight · HBR · SHRM · MIT SMR · HR Dive'
+ : ' · Maritime trade press and institutions / DBR · HR Insight · HBR · SHRM · MIT SMR · HR Dive')
++ '</div></div>'
++ '<div class="stats"><div class="stat"><b>'+nGrp+'</b><span>'+(kr?"분류":"categories")+'</span></div>'
++ '<div class="stat"><b>'+all.length+'</b><span>'+(kr?"항목":"items")+'</span></div>'
++ '<div class="stat"><b>'+nMar+'</b><span>'+(kr?"⚓ 해사":"⚓ maritime")+'</span></div></div></div>';
+if(!q && hr.top && hr.top.length){
+html += '<div class="ww-top" id="hsec-TOP"><h3>'+(kr?"📌 핵심 헤드라인 — 해사 리더십·소통 관점":"📌 Key headlines - maritime leadership and communication")+'</h3>'
++ '<div class="sub">'+(kr
+ ? "선상·육상 조직의 리더십, 소통, 안전문화에 가장 직접 연결되는 소식을 골라 짧게 정리했습니다. 제목을 누르면 해당 기사 카드로 이동합니다."
+ : "The news most directly tied to leadership, communication and safety culture on board and ashore, in brief. Click a headline to jump to its card.")+'</div><ol>';
+hr.top.forEach(function(t,i){
+html += '<li><span class="n">'+(i+1)+'</span><span class="wt-tag">'+esc(kr?t.tag:t.tagEN)+'</span>'
++ '<a class="hd" onclick="hrJump('+i+')">'+esc(kr?t.k:t.e)+'</a>'
++ '<span class="d">'+esc(t.date)+'</span></li>';
+});
+html += '</ol></div>';
+}
+var fl = [["all",kr?"전체":"All",all.length],["mar",kr?"⚓ 해사":"⚓ Maritime",nMar],["gen",kr?"🏢 일반 경영":"🏢 General management",all.length-nMar]];
+html += '<div class="hfilter" role="group" aria-label="'+(kr?"해사·일반 경영 필터":"Maritime or general management filter")+'">' + fl.map(function(f){
+return '<button class="fc-seg'+(hrFilter===f[0]?" on":"")+'" data-f="'+f[0]+'" onclick="setHrFilter(\''+f[0]+'\')">'+esc(f[1])+'<span class="cnt">'+f[2]+'</span></button>';
+}).join("") + '</div>';
+if(!q) html += hrGuideHtml();
+var shown = 0;
+groups.forEach(function(g){
+var items = (g.items||[]).filter(function(it){ return hrPass(it) && (!q || hrHay(it).indexOf(q) >= 0); });
+if(!items.length) return;
+items.sort(function(a,b){
+if(!!a.mar !== !!b.mar) return a.mar ? -1 : 1;
+if((a.date||"") !== (b.date||"")) return (a.date||"") < (b.date||"") ? 1 : -1;
+return (b.prio||0) - (a.prio||0);
+});
+shown += items.length;
+var c = HGRP[g.code] || {i:"",kr:g.code,en:g.code};
+html += '<section class="sec" id="hsec-'+g.code+'"><h2>'+esc(c.i+" "+(kr?(g.kTitle||c.kr):(g.eTitle||c.en)))
++ ' <span style="font-size:12px;color:var(--muted);font-weight:400">('+items.length+')</span></h2><div class="grid">';
+items.forEach(function(it){ html += hcardHtml(it); });
+html += '</div></section>';
+});
+if(!shown) html += '<div class="empty">'+(kr?"검색 결과가 없습니다.":"No results.")+'</div>';
+main.innerHTML = html;
+}
+function setHrFilter(f){
+hrFilter = f; buildNav(); render();
+}
+/* top headline -> scroll to its card (clears the search and a filter that would hide it) */
+function hrJump(i){
+if(!hr || !hr.top || !hr.top[i]) return;
+var u = hr.top[i].url, re = false;
+var s = document.getElementById("search");
+if(s.value){ s.value = ""; re = true; }
+if(hrFilter!=="all"){
+var hit = hrAllItems().filter(function(it){ return it.url===u; })[0];
+if(!hit || !hrPass(hit)){ hrFilter = "all"; re = true; }
+}
+if(re){ buildNav(); render(); }
+var cards = document.querySelectorAll(".hcard");
 for(var j=0;j<cards.length;j++){
 if(cards[j].getAttribute("data-u")===u){
 var el = cards[j];
@@ -1202,6 +1477,18 @@ return '<span class="chip" onclick="gotoSec(\''+g.code+'\')">'+esc(c.i+" "+(lang
 }).join("");
 return;
 }
+if(viewMode==="hr"){
+if(!hr){ nav.innerHTML = ""; return; }
+var hk = (lang==="KR");
+nav.innerHTML = '<span class="chip" onclick="hrGo(\'TOP\')">'+(hk?"📌 핵심 헤드라인":"📌 Key headlines")+'</span>'
++ '<span class="chip" onclick="hrGo(\'GUIDE\')">'+(hk?"📚 추천 소스·키워드":"📚 Sources & keywords")+'</span>'
++ hrGroups().filter(function(g){ return (g.items||[]).length; }).map(function(g){
+var c = HGRP[g.code] || {i:"",kr:g.code,en:g.code};
+var n = (g.items||[]).filter(hrPass).length;
+return '<span class="chip'+(n?"":" nil")+'" onclick="hrGo(\''+g.code+'\')">'+esc(c.i+" "+(hk?c.kr:c.en)+" ("+n+")")+'</span>';
+}).join("");
+return;
+}
 if(viewMode==="tonnage"){
 if(!tonnage){ nav.innerHTML = ""; return; }
 nav.innerHTML = tonnage.groups.map(function(g){
@@ -1232,24 +1519,38 @@ var pre = "sec-";
 if(viewMode==="tonnage"){ pre = "tsec-"; }
 else if(viewMode==="korea"){ pre = "ksec-"; }
 else if(viewMode==="ww"){ pre = "wsec-"; }
+else if(viewMode==="hr"){ pre = "hsec-"; }
 else if(viewMode==="all"){ exitAll(); }
 setTimeout(function(){ var el=document.getElementById(pre+code); if(el) el.scrollIntoView({behavior:"smooth",block:"start"}); }, 40);
+}
+/* HR nav chip: if the target is hidden by the search or the maritime/general filter, clear them first */
+function hrGo(code){
+if(!document.getElementById("hsec-"+code)){
+var s = document.getElementById("search");
+if(s.value) s.value = "";
+hrFilter = "all";
+buildNav(); render();
+}
+if(code==="GUIDE"){ hrGuideOpen = true; var gd = document.getElementById("hsec-GUIDE"); if(gd) gd.open = true; }
+gotoSec(code);
 }
 
 /* ---------- view tabs ---------- */
 function paintTabs(){
-var other = (viewMode==="tonnage"||viewMode==="forecast"||viewMode==="korea"||viewMode==="ww");
+var other = (viewMode==="tonnage"||viewMode==="forecast"||viewMode==="korea"||viewMode==="ww"||viewMode==="hr");
 document.getElementById("tabDaily").classList.toggle("on", !other);
 document.getElementById("tabWw").classList.toggle("on", viewMode==="ww");
 document.getElementById("tabTon").classList.toggle("on", viewMode==="tonnage");
 document.getElementById("tabFc").classList.toggle("on", viewMode==="forecast");
 document.getElementById("tabKr").classList.toggle("on", viewMode==="korea");
+document.getElementById("tabHr").classList.toggle("on", viewMode==="hr");
 document.getElementById("dateSel").style.display = other ? "none" : "";
 document.getElementById("search").style.display = (viewMode==="forecast") ? "none" : "";
 document.getElementById("tabDailyTxt").textContent = (lang==="KR") ? "일일 다이제스트" : "Daily Digest";
 document.getElementById("tabWwTxt").textContent = "Wallenius";
 document.getElementById("tabTonTxt").textContent = (lang==="KR") ? "선복량·건조량" : "Tonnage";
 document.getElementById("tabKrTxt").textContent = (lang==="KR") ? "한국 해사동향" : "Korea Notices";
+document.getElementById("tabHrTxt").textContent = (lang==="KR") ? "HR·리더십·소통" : "HR & Leadership";
 var fcName = "";
 if(forecast && forecast.segments && forecast.segments[fcSeg]){
 var sgx = forecast.segments[fcSeg];
@@ -1294,9 +1595,22 @@ loadWw(function(d){ ww = d; buildNav(); render(); });
 }
 try{window.scrollTo({top:0,behavior:"smooth"});}catch(e){window.scrollTo(0,0);}
 }
+function showHr(){
+if(viewMode==="hr") return;
+fcTipHide();
+viewMode = "hr"; allCode = null; allItems = [];
+paintTabs();
+document.getElementById("catNav").innerHTML = "";
+if(hr){ buildNav(); render(); }
+else {
+document.getElementById("main").innerHTML = '<div class="empty">'+(lang==="KR"?"HR·리더십·소통 소식 불러오는 중…":"Loading HR & leadership news…")+'</div>';
+loadHr(function(d){ hr = d; if(viewMode==="hr"){ buildNav(); render(); } });
+}
+try{window.scrollTo({top:0,behavior:"smooth"});}catch(e){window.scrollTo(0,0);}
+}
 function showDaily(){
 if(viewMode==="all"){ exitAll(true); return; }
-if(viewMode!=="tonnage" && viewMode!=="forecast" && viewMode!=="korea" && viewMode!=="ww") return;
+if(viewMode!=="tonnage" && viewMode!=="forecast" && viewMode!=="korea" && viewMode!=="ww" && viewMode!=="hr") return;
 viewMode = "day"; allCode = null; allItems = [];
 paintTabs(); buildNav(); render();
 try{window.scrollTo({top:0,behavior:"smooth"});}catch(e){window.scrollTo(0,0);}
@@ -1340,6 +1654,7 @@ document.getElementById("tabWw").addEventListener("click", showWw);
 document.getElementById("tabTon").addEventListener("click", showTonnage);
 document.getElementById("tabFc").addEventListener("click", showForecast);
 document.getElementById("tabKr").addEventListener("click", showKorea);
+document.getElementById("tabHr").addEventListener("click", showHr);
 paintTabs();
 var brand = document.getElementById("brandHome");
 if(brand){
