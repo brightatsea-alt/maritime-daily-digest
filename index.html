@@ -188,24 +188,16 @@ border-radius:8px;font-size:13px;font-weight:700;cursor:pointer}
 .pager .pg:disabled{opacity:.4;cursor:default}
 .pager .pg-ell{color:var(--muted);padding:0 2px}
 
-/* seven view tabs: labels never wrap and the tab strip scrolls sideways inside itself whenever the tabs
+/* eight view tabs: labels never wrap and the tab strip scrolls sideways inside itself whenever the tabs
    do not fit (never the page). The strip overlaps the 2px bottom rule via a negative margin, so the
-   tabs keep their "attached" look even though the strip clips its overflow. Compact sizing keeps all seven
-   in one row from 1181px up (incl. the longest label, EN "Forecast · Gas Carriers"); narrower screens
-   scroll the strip (a thin scrollbar shows on desktop widths, none on touch widths). */
-.vtabs-inner{gap:5px;overflow-x:auto;overflow-y:hidden;margin-bottom:-2px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+   tabs keep their "attached" look even though the strip clips its overflow. Compact sizing keeps all eight
+   in one row from 1181px up (incl. the longest labels, EN "Ship Manager Benchmark" and "Forecast · Gas
+   Carriers"); narrower screens scroll the strip (a thin scrollbar shows on desktop widths, none on touch). */
+.vtabs-inner{gap:4px;overflow-x:auto;overflow-y:hidden;margin-bottom:-2px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
 .vtabs-inner::-webkit-scrollbar{height:5px}
 .vtabs-inner::-webkit-scrollbar-thumb{background:#c3ccda;border-radius:3px}
-.vtab{white-space:nowrap;flex:0 0 auto;padding:10px 11px;font-size:13.5px;top:0}
-.vtab .vt-ico{margin-right:5px}
-@media (max-width:1180px){
-.vtab{padding:10px 10px;font-size:13px}
-.vtab .vt-ico{margin-right:4px}
-}
-@media (max-width:1023px){
-.vtab{padding:9px 9px;font-size:12.5px}
+.vtab{white-space:nowrap;flex:0 0 auto;padding:10px 7px;font-size:12px;top:0}
 .vtab .vt-ico{margin-right:3px}
-}
 @media (max-width:900px){
 .vtabs-inner{overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .vtabs-inner::-webkit-scrollbar{display:none}
@@ -255,6 +247,19 @@ border-radius:999px;padding:1px 8px;white-space:nowrap}
 .hchip.tl{color:#6b4a00;background:#fff4dc;border-color:#ecd49f;font-weight:700;max-width:100%;white-space:normal;overflow-wrap:anywhere}
 .grid>.hcard{min-width:0}
 .hcard .meta{min-width:0;overflow-wrap:anywhere}
+/* Ship Manager Benchmark tab: company chip on cards, company filter, company list in the guide */
+.hchip.co{color:#fff;background:#0f3d63;border-color:#0f3d63;font-weight:700;max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.hfilter{scroll-margin-top:120px}
+.hfilter.cof{gap:6px}
+.hfilter.cof .fc-seg{font-size:12.5px;padding:6px 12px;max-width:100%;overflow-wrap:anywhere}
+.hguide h4 .hint{font-size:11.5px;font-weight:400;color:var(--muted);margin-left:6px}
+.hguide ul.colist{display:flex;flex-wrap:wrap;gap:6px;list-style:none;padding:0;margin:6px 0 10px}
+.hguide ul.colist li{max-width:100%}
+.hguide .coq{appearance:none;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;color:var(--h1);background:#fff;
+border:1px solid var(--line);border-radius:999px;padding:3px 10px;max-width:100%;overflow-wrap:anywhere;text-align:left}
+.hguide .coq:hover{border-color:var(--h2);background:var(--chip)}
+.hguide .coq.on{background:var(--h1);border-color:var(--h1);color:#fff}
+.hguide .coq .cnt{font-weight:600;opacity:.7;margin-left:3px}
 .hfilter{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
 .hfilter .fc-seg{font-size:13px;padding:7px 15px}
 .hfilter .fc-seg .cnt{font-weight:600;opacity:.75;margin-left:4px}
@@ -314,6 +319,7 @@ padding:12px 18px;margin-bottom:24px;scroll-margin-top:120px}
 <div class="vtabs"><div class="vtabs-inner">
 <button class="vtab on" id="tabDaily"><span class="vt-ico">📰</span><span id="tabDailyTxt">일일 다이제스트</span></button>
 <button class="vtab" id="tabWw"><span class="vt-ico">🟦</span><span id="tabWwTxt">Wallenius</span></button>
+<button class="vtab" id="tabSm"><span class="vt-ico">🔭</span><span id="tabSmTxt">선박관리사 벤치마크</span></button>
 <button class="vtab" id="tabTon"><span class="vt-ico">📊</span><span id="tabTonTxt">선복량·건조량</span></button>
 <button class="vtab" id="tabFc"><span class="vt-ico">🔮</span><span id="tabFcTxt">Forecast</span></button>
 <button class="vtab" id="tabKr"><span class="vt-ico">🇰🇷</span><span id="tabKrTxt">한국 해사동향</span></button>
@@ -518,7 +524,50 @@ kw:[
 ["Collaboration / Teamwork","선상 팀·선박-육상·다자 작업의 협업","collaboration within shipboard teams, between ship and shore, and across multi-party operations"]
 ]
 };
-/* per-tab configuration for the two HR tabs (state f = filter, g = guide open) */
+/* Ship Manager Benchmark tab (2026-10-28): what leading ship managers have newly started — initiatives,
+   tools and digital platforms, events and research — so our organisation can see and learn from it. */
+var SGRP = {
+INIT:{i:"🚀",kr:"새 이니셔티브",en:"New initiatives",d:"새 서비스·사업·조직·파트너십·M&A, 선원·안전·환경 프로그램",dEN:"new services, business, organisation, partnerships and M&A, plus crew, safety and environmental programmes"},
+DIGI:{i:"💻",kr:"툴·디지털 플랫폼",en:"Tools & digital platforms",d:"자체 개발·도입 시스템, 데이터·AI, 원격 지원·성능 관리",dEN:"in-house and adopted systems, data and AI, remote support and performance management"},
+EVENT:{i:"🎤",kr:"행사·수상",en:"Events & awards",d:"주최 행사·컨퍼런스 발표·수상",dEN:"events they host, conference talks and awards"},
+RSRCH:{i:"📊",kr:"리서치·보고서",en:"Research & reports",d:"선박관리사가 수행·후원·발표한 조사·백서·연구",dEN:"surveys, white papers and studies that ship managers ran, sponsored or published"}
+};
+var SGRP_ORDER = ["INIT","DIGI","EVENT","RSRCH"];
+/* tag dictionary of the benchmark tab only (kept apart from HTAG so codes can mean different things) */
+var STAG = {
+CREW:{kr:"선원·인재",en:"Crew & talent"},
+TRN:{kr:"교육·훈련",en:"Training"},
+WELL:{kr:"웰빙",en:"Wellbeing"},
+SAFE:{kr:"안전",en:"Safety"},
+GREEN:{kr:"탈탄소·환경",en:"Decarbonisation"},
+FUEL:{kr:"신연료",en:"New fuels"},
+DIGI:{kr:"디지털",en:"Digital"},
+AI:{kr:"AI",en:"AI"},
+DATA:{kr:"데이터",en:"Data"},
+CYBER:{kr:"사이버",en:"Cyber"},
+RSUP:{kr:"원격 지원",en:"Remote support"},
+VPERF:{kr:"선박 성능",en:"Vessel performance"},
+MAINT:{kr:"정비·기술",en:"Maintenance"},
+PROC:{kr:"구매·조달",en:"Procurement"},
+BIZ:{kr:"사업·M&A",en:"Business & M&A"},
+PART:{kr:"파트너십",en:"Partnerships"},
+DI:{kr:"다양성",en:"Diversity"},
+ESG:{kr:"ESG·보고",en:"ESG & reporting"}
+};
+var SGUIDE = {
+sum:"📚 이 탭을 보는 법 · 등장 선박관리사",sumEN:"📚 How to use this tab and the ship managers covered",
+hint:"세계 유수 선박관리사에게서 배우기",hintEN:"Learning from leading ship managers",
+purpose:"세계 유수 선박관리사가 새로 시작한 일을 모아 우리 조직이 보고 배우기 위한 탭입니다. 카드마다 '벤치마킹 포인트'에 우리가 참고할 점을 적었습니다.",
+purposeEN:"This tab gathers what leading ship managers have newly started so that our organisation can see it and learn from it. Each card notes what we can take from it under 'What we can learn'.",
+typesH:"🗂️ 네 가지 유형",typesHEN:"🗂️ Four types",
+coH:"🏢 등장 선박관리사",coHEN:"🏢 Ship managers covered",
+coHint:"이름을 누르면 그 회사 소식만 봅니다.",coHintEN:"Click a name to show only that company's news.",
+note:"Wilhelmsen Ship Management·윌헬름센 그룹 소식은 Wallenius 탭에서, 선원 리더십·소통 프로그램은 Marine HR 탭에서도 볼 수 있습니다.",
+noteEN:"News on Wilhelmsen Ship Management and the Wilhelmsen group is in the Wallenius tab; crew leadership and communication programmes also appear in the Marine HR tab."
+};
+/* per-tab configuration for the card tabs sharing one implementation — the two HR tabs and the ship manager
+   benchmark tab (state f = filter, g = guide open). Optional keys: tags (tag dictionary, default HTAG),
+   coFilter (company filter built from the data), stat3.count (custom third stat). */
 var HRTABS = {
 hr:{
  file:"hrlead.js", win:"HRLEAD", pre:"hsec-", grp:HGRP, order:HGRP_ORDER, marFirst:true, filters:null,
@@ -556,6 +605,24 @@ hro:{
  guide:function(T,key){ return officeGuideHtml(T,key); },
  loadTxt:{KR:"HR·리더십·소통 소식 불러오는 중…",EN:"Loading HR, leadership & work news…"},
  errTxt:{KR:"HR·리더십·소통 탭 데이터를 불러오지 못했습니다.",EN:"Could not load the HR, Leadership & Work tab data."},
+ data:null, loading:false, f:"all", g:false
+},
+sm:{
+ file:"shipmgr.js", win:"SHIPMGR", pre:"ssec-", grp:SGRP, order:SGRP_ORDER, marFirst:false, filters:null,
+ tags:STAG, coFilter:true,
+ filterAria:{KR:"선박관리사별 필터",EN:"Filter by ship manager"},
+ tab:{KR:"선박관리사 벤치마크",EN:"Ship Manager Benchmark"},
+ lbl:{KR:{sum:"주요 내용",imp:"💡 벤치마킹 포인트",src:"출처",key:"핵심"},EN:{sum:"Summary",imp:"💡 What we can learn",src:"Source",key:"Key"}},
+ hero:{KR:"🔭 선박관리사 벤치마크 — 세계 유수 선박관리사의 새 이니셔티브·툴·디지털 플랫폼·행사·리서치",EN:"🔭 Ship Manager Benchmark - new initiatives, tools, digital platforms, events and research from leading ship managers"},
+ sub:{KR:"선박관리사 발표·해사 전문지·연구 보고서",EN:"Ship manager announcements, maritime press and research reports"},
+ stat3:{KR:"선박관리사",EN:"companies",count:function(all){ var s={}; all.forEach(function(it){ if(it.co) s[it.co]=1; }); return Object.keys(s).length; }},
+ topH:{KR:"📌 핵심 헤드라인 — 우리가 배울 점",EN:"📌 Key headlines - what we can learn"},
+ topSub:{KR:"세계 유수 선박관리사의 새 시도 가운데 우리 조직이 가장 참고할 만한 것을 골라 짧게 정리했습니다. 제목을 누르면 해당 기사 카드로 이동합니다.",
+  EN:"The new moves by leading ship managers that our organisation can learn most from, in brief. Click a headline to jump to its card."},
+ guideChip:{KR:"📚 보는 법·선박관리사",EN:"📚 How to use & companies"},
+ guide:function(T,key){ return smGuideHtml(T,key); },
+ loadTxt:{KR:"선박관리사 벤치마크 불러오는 중…",EN:"Loading the ship manager benchmark…"},
+ errTxt:{KR:"선박관리사 벤치마크 탭 데이터를 불러오지 못했습니다.",EN:"Could not load the Ship Manager Benchmark tab data."},
  data:null, loading:false, f:"all", g:false
 }
 };
@@ -758,7 +825,7 @@ s.onerror = function(){ wwLoading=false; cb(null); };
 document.head.appendChild(s);
 }
 
-/* HR tab data loaders: hrlead.js (Marine HR) / hroffice.js (shore-staff HR) */
+/* card-tab data loaders: hrlead.js (Marine HR) / hroffice.js (shore-staff HR) / shipmgr.js (ship manager benchmark) */
 function loadHrTab(key, cb){
 var T = HRTABS[key];
 if(window[T.win]) return cb(window[T.win]);
@@ -1222,7 +1289,7 @@ return;
 }
 
 /* ---------- HR tabs (Marine HR / shore-staff HR) — one config-driven implementation (HRTABS) ---------- */
-function isHrMode(m){ return m==="hr" || m==="hro"; }
+function isHrMode(m){ return m==="hr" || m==="hro" || m==="sm"; }
 function hrGroups(T){
 if(!T || !T.data || !T.data.groups) return [];
 var rank = function(c){ var i = T.order.indexOf(c); return i<0 ? 99 : i; };
@@ -1233,14 +1300,42 @@ var a = [];
 hrGroups(T).forEach(function(g){ (g.items||[]).forEach(function(it){ a.push(it); }); });
 return a;
 }
-function hrPass(T,it){
-if(!T.filters || T.f==="all") return true;
-var f = T.filters.filter(function(x){ return x.k===T.f; })[0];
-return !f || !f.fn || f.fn(it);
+/* company counts for the benchmark tab, most items first (ties by name) */
+function smCoCounts(T){
+var m = {};
+hrAllItems(T).forEach(function(it){ var c = it.co || "—"; m[c] = (m[c]||0) + 1; });
+return Object.keys(m).map(function(c){ return {co:c, n:m[c]}; })
+.sort(function(a,b){ return (b.n-a.n) || (a.co<b.co ? -1 : (a.co>b.co ? 1 : 0)); });
 }
-function hrHay(it){
-var tg = (it.tags||[]).map(function(t){ var x=HTAG[t]; return x ? (x.kr+" "+x.en) : ""; }).join(" ");
-return (it.title+" "+(it.eTitle||"")+" "+(it.kSum||"")+" "+(it.eSum||"")+" "+(it.kImp||"")+" "+(it.eImp||"")+" "+it.src+" "+it.code+" "+(it.tool||"")+" "+tg).toLowerCase();
+/* company filter: All + up to 10 companies with 2+ items + Others (everyone else) */
+function smCoFilters(T){
+var cc = smCoCounts(T);
+var top = cc.filter(function(x){ return x.n>=2; }).slice(0,10).map(function(x){ return x.co; });
+var list = [{k:"all",KR:"전체",EN:"All",fn:null}];
+top.forEach(function(c){ list.push({k:"co:"+c, KR:c, EN:c, fn:function(it){ return (it.co||"—")===c; }}); });
+if(cc.length > top.length) list.push({k:"others",KR:"기타",EN:"Others",fn:function(it){ return top.indexOf(it.co||"—")<0; }});
+return list;
+}
+function hrFilterList(T){
+if(T.filters) return T.filters;
+if(!T.coFilter) return null;
+if(!T._fl || T._flD!==T.data){ T._fl = smCoFilters(T); T._flD = T.data; }   /* built once per data load */
+return T._fl;
+}
+function hrPass(T,it){
+if(T.f==="all") return true;
+var L = hrFilterList(T);
+if(!L) return true;
+var f = L.filter(function(x){ return x.k===T.f; })[0];
+if(f) return !f.fn || f.fn(it);
+/* a single company picked from the guide that has no chip of its own */
+if(T.f.indexOf("co:")===0) return (it.co||"—")===T.f.slice(3);
+return true;
+}
+function hrHay(it,T){
+var D = (T && T.tags) || HTAG;
+var tg = (it.tags||[]).map(function(t){ var x=D[t]; return x ? (x.kr+" "+x.en) : ""; }).join(" ");
+return (it.title+" "+(it.eTitle||"")+" "+(it.kSum||"")+" "+(it.eSum||"")+" "+(it.kImp||"")+" "+(it.eImp||"")+" "+it.src+" "+it.code+" "+(it.tool||"")+" "+(it.co||"")+" "+tg).toLowerCase();
 }
 function hcardHtml(it,T){
 var L = T.lbl[lang];
@@ -1251,8 +1346,10 @@ html += '<div class="top"><span class="code">'+esc(g.i+" "+it.code)+'</span>'
 + (it.prio>=3 ? '<span class="pri">'+esc(L.key)+'</span>' : '')
 + '<span class="meta">'+esc(srcTx(it.src))+' · '+esc(it.date||"")+'</span></div>';
 html += '<h3>'+esc(kp(it.title,it.eTitle))+'</h3>';
-var chips = (it.tool ? '<span class="hchip tl">🧰 '+esc(it.tool)+'</span>' : '')
-+ (it.tags||[]).filter(function(t){ return HTAG[t]; }).map(function(t){ return '<span class="hchip">'+esc(lang==="KR"?HTAG[t].kr:HTAG[t].en)+'</span>'; }).join("");
+var D = T.tags || HTAG;
+var chips = (it.co ? '<span class="hchip co">🏢 '+esc(it.co)+'</span>' : '')
++ (it.tool ? '<span class="hchip tl">🧰 '+esc(it.tool)+'</span>' : '')
++ (it.tags||[]).filter(function(t){ return D[t]; }).map(function(t){ return '<span class="hchip">'+esc(lang==="KR"?D[t].kr:D[t].en)+'</span>'; }).join("");
 if(chips) html += '<div class="htags">'+chips+'</div>';
 html += '<p><span class="lab">'+L.sum+':</span> '+esc(kp(it.kSum,it.eSum))+'</p>';
 html += '<div class="impl"><b>'+L.imp+':</b> '+esc(kp(it.kImp,it.eImp))+'</div>';
@@ -1292,6 +1389,34 @@ h += '<h4>'+(kr?"🔎 이 탭에서 다루는 주제":"🔎 Topics in this tab")
 OGRP_ORDER.forEach(function(c){ var g = OGRP[c]; h += '<li><b>'+esc(g.i+" "+(kr?g.kr:g.en))+'</b> — '+esc(kr?g.d:g.dEN)+'</li>'; });
 return h + '</ul></details>';
 }
+/* benchmark tab guide: purpose, the four types, the companies covered (click = filter to that company), notes */
+function smGuideHtml(T,key){
+var kr = (lang==="KR"), G = SGUIDE;
+var h = hrGuideOpenTag(T,key,G,kr);
+h += '<p class="gnote gpurpose">🎯 '+esc(kr?G.purpose:G.purposeEN)+'</p>';
+h += '<h4>'+esc(kr?G.typesH:G.typesHEN)+'</h4><ul class="kw types">';
+SGRP_ORDER.forEach(function(c){ var g = SGRP[c]; h += '<li><b>'+esc(g.i+" "+(kr?g.kr:g.en))+'</b> — '+esc(kr?g.d:g.dEN)+'</li>'; });
+h += '</ul>';
+h += '<h4>'+esc(kr?G.coH:G.coHEN)+' <span class="hint">'+esc(kr?G.coHint:G.coHintEN)+'</span></h4><ul class="colist">';
+smCoCounts(T).forEach(function(x){
+var f = "co:"+x.co;
+h += '<li><button type="button" class="coq'+(T.f===f?" on":"")+'" data-f="'+esc(f)+'" onclick="smPickCo(this.getAttribute(\'data-f\'))">'
++ esc(x.co)+' <span class="cnt">'+x.n+'</span></button></li>';
+});
+h += '</ul>';
+h += '<p class="gnote">ℹ️ '+esc(kr?G.note:G.noteEN)+'</p>';
+return h + '</details>';
+}
+/* guide company click: show only that company's items (any company, even one without its own chip) */
+function smPickCo(f){
+var T = HRTABS.sm;
+var s = document.getElementById("search");
+if(s.value) s.value = "";
+T.f = (T.f===f) ? "all" : f;
+buildNav(); render();
+var row = document.querySelector("#main .hfilter");
+if(row) row.scrollIntoView({behavior:"smooth",block:"start"});
+}
 function renderHrTab(key){
 var T = HRTABS[key], d = T.data;
 var main = document.getElementById("main");
@@ -1300,7 +1425,7 @@ var kr = (lang==="KR"), LK = kr ? "KR" : "EN";
 if(!d){ main.innerHTML='<div class="empty">'+esc(T.errTxt[LK])+'</div>'; return; }
 var groups = hrGroups(T), all = hrAllItems(T);
 var nGrp = groups.filter(function(g){ return (g.items||[]).length; }).length;
-var n3 = all.filter(T.stat3.fn).length;
+var n3 = T.stat3.count ? T.stat3.count(all) : all.filter(T.stat3.fn).length;
 var html = '<div class="hero">'
 + '<div><div class="big">'+esc(T.hero[LK])+'</div>'
 + '<div class="sub">'+(kr?"기준일 ":"Updated ")+esc(kr?(d.updatedKR||d.updated):(d.updatedEN||d.updated))+' · '+esc(T.sub[LK])+'</div></div>'
@@ -1317,16 +1442,23 @@ html += '<li><span class="n">'+(i+1)+'</span><span class="wt-tag">'+esc(kr?t.tag
 });
 html += '</ol></div>';
 }
-if(T.filters){
-html += '<div class="hfilter" role="group" aria-label="'+esc(T.filterAria[LK])+'">' + T.filters.map(function(f){
+var FL = hrFilterList(T);
+if(FL){
+var fl = FL.slice();
+/* a single company picked in the guide that has no chip of its own gets a temporary chip */
+if(T.f!=="all" && !fl.some(function(f){ return f.k===T.f; }) && T.f.indexOf("co:")===0){
+var cn = T.f.slice(3);
+fl.push({k:T.f, KR:cn, EN:cn, fn:function(it){ return (it.co||"—")===cn; }});
+}
+html += '<div class="hfilter'+(T.coFilter?" cof":"")+'" role="group" aria-label="'+esc(T.filterAria[LK])+'">' + fl.map(function(f){
 var n = all.filter(function(it){ return !f.fn || f.fn(it); }).length;
-return '<button class="fc-seg'+(T.f===f.k?" on":"")+'" data-f="'+f.k+'" onclick="setHrFilter(\''+key+'\',\''+f.k+'\')">'+esc(f[LK])+'<span class="cnt">'+n+'</span></button>';
+return '<button class="fc-seg'+(T.f===f.k?" on":"")+'" data-f="'+esc(f.k)+'" onclick="setHrFilter(\''+key+'\',this.getAttribute(\'data-f\'))">'+esc(f[LK])+'<span class="cnt">'+n+'</span></button>';
 }).join("") + '</div>';
 }
 if(!q) html += T.guide(T,key);
 var shown = 0;
 groups.forEach(function(g){
-var items = (g.items||[]).filter(function(it){ return hrPass(T,it) && (!q || hrHay(it).indexOf(q) >= 0); });
+var items = (g.items||[]).filter(function(it){ return hrPass(T,it) && (!q || hrHay(it,T).indexOf(q) >= 0); });
 if(!items.length) return;
 items.sort(function(a,b){
 if(T.marFirst && !!a.mar !== !!b.mar) return a.mar ? -1 : 1;
@@ -1671,6 +1803,7 @@ function paintTabs(){
 var other = (viewMode==="tonnage"||viewMode==="forecast"||viewMode==="korea"||viewMode==="ww"||isHrMode(viewMode));
 document.getElementById("tabDaily").classList.toggle("on", !other);
 document.getElementById("tabWw").classList.toggle("on", viewMode==="ww");
+document.getElementById("tabSm").classList.toggle("on", viewMode==="sm");
 document.getElementById("tabTon").classList.toggle("on", viewMode==="tonnage");
 document.getElementById("tabFc").classList.toggle("on", viewMode==="forecast");
 document.getElementById("tabKr").classList.toggle("on", viewMode==="korea");
@@ -1684,6 +1817,7 @@ document.getElementById("tabTonTxt").textContent = (lang==="KR") ? "선복량·�
 document.getElementById("tabKrTxt").textContent = (lang==="KR") ? "한국 해사동향" : "Korea Notices";
 document.getElementById("tabHrTxt").textContent = HRTABS.hr.tab[lang==="KR"?"KR":"EN"];
 document.getElementById("tabHroTxt").textContent = HRTABS.hro.tab[lang==="KR"?"KR":"EN"];
+document.getElementById("tabSmTxt").textContent = HRTABS.sm.tab[lang==="KR"?"KR":"EN"];
 var fcName = "";
 if(forecast && forecast.segments && forecast.segments[fcSeg]){
 var sgx = forecast.segments[fcSeg];
@@ -1744,6 +1878,7 @@ try{window.scrollTo({top:0,behavior:"smooth"});}catch(e){window.scrollTo(0,0);}
 }
 function showHr(){ showHrTab("hr"); }
 function showHro(){ showHrTab("hro"); }
+function showSm(){ showHrTab("sm"); }
 function showDaily(){
 if(viewMode==="all"){ exitAll(true); return; }
 if(viewMode!=="tonnage" && viewMode!=="forecast" && viewMode!=="korea" && viewMode!=="ww" && !isHrMode(viewMode)) return;
@@ -1787,6 +1922,7 @@ document.getElementById("btnEN").addEventListener("click", function(){ setLang("
 sel.addEventListener("change", function(){ selectDate(sel.value); });
 document.getElementById("tabDaily").addEventListener("click", showDaily);
 document.getElementById("tabWw").addEventListener("click", showWw);
+document.getElementById("tabSm").addEventListener("click", showSm);
 document.getElementById("tabTon").addEventListener("click", showTonnage);
 document.getElementById("tabFc").addEventListener("click", showForecast);
 document.getElementById("tabKr").addEventListener("click", showKorea);
