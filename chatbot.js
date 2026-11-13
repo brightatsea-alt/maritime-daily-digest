@@ -29,7 +29,7 @@ var TX = {
   webwait:"신뢰할 수 있는 해사 매체에서 찾는 중…",weberr:"외부 검색에 실패했습니다. 아래 신뢰 매체에서 직접 확인해 주세요.",
   ext:"신뢰할 수 있는 사이트에서 찾아보기",extnote:"아래 링크는 해당 매체의 검색 결과를 새 창으로 엽니다.",
   websrc:"출처",privacy:"이 챗봇은 사이트의 해사 뉴스와 사용 방법에 대해서만 답합니다. 개인정보(이름·연락처·주소·계좌 등)나 개인적인 질문에는 답하지 않습니다. 입력하신 개인정보는 저장하거나 전송하지 않았습니다.",
-  empty:"질문을 입력해 주세요.",latest:function(d,n){return d+" 최신 호의 주요 뉴스입니다 (전체 "+n+"건 중 Top News·사고 우선).";}},
+  empty:"질문을 입력해 주세요.",thinking:"질문을 이해하는 중…",ranking:"관련도 순으로 정리하는 중…",understood:function(r){return r?"이해한 질문: "+r:"";},offtopic:"이 챗봇은 해운·해사 뉴스와 사이트 사용법에 대해서만 답합니다.",webbtn:"🔎 외부 매체에서 찾기",webtitle:"신뢰할 수 있는 해사 매체 검색 결과",weblimit:"오늘의 외부 검색 한도에 도달했습니다. 아래 링크로 직접 확인해 주세요.",latest:function(d,n){return d+" 최신 호의 주요 뉴스입니다 (전체 "+n+"건 중 Top News·사고 우선).";}},
  EN:{title:"Digest assistant",sub:"Site news and how-to",ph:"e.g. PSC detention news, car carrier fire, how to use",send:"Send",close:"Close",open:"Open chatbot",
   hello:"Hello. I am the Maritime Daily Digest assistant. I search every past edition and topic tab and list as many related stories as I can find, and I explain what the site is for and how to use it. I do not answer personal questions or handle personal data.",
   chips:["Purpose of this site","How to use","Today's top news","PSC detention","Car carrier fire","Cyber security","EU ETS / FuelEU","Seafarer leadership"],
@@ -40,7 +40,7 @@ var TX = {
   webwait:"Searching reliable maritime sources…",weberr:"The web search failed. Please check the reliable sources below.",
   ext:"Look it up on reliable sites",extnote:"Each link opens that outlet's search results in a new window.",
   websrc:"Sources",privacy:"This assistant only answers about the site's maritime news and how to use it. It does not answer personal questions or handle personal data (names, contacts, addresses, accounts, etc.). Nothing you typed was stored or sent.",
-  empty:"Please type a question.",latest:function(d,n){return "Top stories from the latest edition, "+d+" ("+n+" items in total; Top News and accidents first).";}}
+  empty:"Please type a question.",thinking:"Understanding your question…",ranking:"Ranking by relevance…",understood:function(r){return r?"Understood as: "+r:"";},offtopic:"This assistant only answers about shipping and maritime news and how to use this site.",webbtn:"🔎 Search external outlets",webtitle:"Results from reliable maritime outlets",weblimit:"Today's external search limit has been reached. Please use the links below.",latest:function(d,n){return "Top stories from the latest edition, "+d+" ("+n+" items in total; Top News and accidents first).";}}
 };
 
 var ABOUT = {
@@ -166,8 +166,10 @@ function build(){
  });
  return out;
 }
-function search(q){
- var gs = groupsOf(q); if(!gs.length) return {groups:gs, hits:[], partial:false};
+function search(q, plan){
+ var gs = plan ? plan.groups : groupsOf(q); if(!gs.length) return {groups:gs, hits:[], partial:false};
+ var inRange = function(r){ if(!plan) return true; if(plan.from && r.date && r.date < plan.from) return false; if(plan.to && r.date && r.date > plan.to) return false; return true; };
+ var secB = function(r){ return plan && plan.sections && plan.sections.indexOf(r.code)>=0 ? 1 : 0; };
  var score = function(r, g){
   if(g.code && r.code===g.code) return 2;
   for(var i=0;i<g.terms.length;i++){ var t=g.terms[i]; if(matchTerm(r.head,t)) return 3; }
@@ -175,7 +177,7 @@ function search(q){
   return 0;
  };
  var all = [], some = [];
- corpus.forEach(function(r){ var tot=0, hit=0; gs.forEach(function(g){ var s=score(r,g); if(s){hit++; tot+=s;} }); if(hit===gs.length) all.push({r:r,s:tot}); else if(hit>0) some.push({r:r,s:tot+hit*2,h:hit}); });
+ corpus.forEach(function(r){ if(!inRange(r)) return; var tot=secB(r), hit=0; gs.forEach(function(g){ var s=score(r,g); if(s){hit++; tot+=s;} }); if(hit===gs.length) all.push({r:r,s:tot}); else if(hit>0) some.push({r:r,s:tot+hit*2,h:hit}); });
  var sorter = function(a,b){ return (b.s-a.s) || (b.r.date>a.r.date?1:b.r.date<a.r.date?-1:0); };
  if(all.length) return {groups:gs, hits:all.sort(sorter).map(function(x){return x.r;}), partial:false};
  some = some.filter(function(x){ return gs.length<3 || x.h>=2; });
@@ -203,12 +205,13 @@ var css = ''
 +'.mddc-r .sm{font-size:12.5px;color:#46546a;margin-top:3px}'
 +'.mddc-more{margin-top:8px;width:100%;border:1px solid #c9d6e6;background:#fff;color:#1F4E79;border-radius:8px;padding:7px;cursor:pointer;font-weight:700}'
 +'.mddc-ext a{display:inline-block;margin:3px 4px 3px 0;padding:4px 9px;border-radius:12px;background:#fff7ec;border:1px solid #f1d3a8;color:#8a4b00;text-decoration:none;font-size:12.5px}'
++'.mddc-web{background:#1F4E79;color:#fff;border-color:#1F4E79}.mddc-webans{margin-top:8px;padding:10px;border-radius:10px;background:#f0f6ff;border:1px solid #cfe0f5}'
 +'.mddc-note{font-size:12px;color:#6b7a8c}.mddc-warn{background:#fff4f4;border-color:#f3c9c9}'
 +'.mddc-f{display:flex;gap:8px;padding:10px 12px;border-top:1px solid #e4e8ef;background:#fff}'
 +'.mddc-f textarea{flex:1;resize:none;border:1px solid #cfd8e3;border-radius:10px;padding:9px 10px;font:inherit;font-size:14px;height:42px;max-height:110px}'
 +'.mddc-f button{border:0;background:#1F4E79;color:#fff;border-radius:10px;padding:0 14px;font-weight:700;cursor:pointer}'
 +'@media (max-width:640px){#mddcBtn{right:14px;bottom:14px;width:52px;height:52px}}'
-+'@media (prefers-color-scheme:dark){#mddcPanel{background:#151b24;color:#e6edf5}.mddc-b{background:#0f141b}.mddc-m.bot{background:#1b2330;border-color:#2a3546}.mddc-r a.tt{color:#e6edf5}.mddc-r .sm{color:#b3c0d0}.mddc-r{border-color:#2a3546}.mddc-f{background:#151b24;border-color:#2a3546}.mddc-f textarea{background:#0f141b;color:#e6edf5;border-color:#2a3546}.mddc-more{background:#1b2330}}';
++'@media (prefers-color-scheme:dark){#mddcPanel{background:#151b24;color:#e6edf5}.mddc-b{background:#0f141b}.mddc-m.bot{background:#1b2330;border-color:#2a3546}.mddc-r a.tt{color:#e6edf5}.mddc-r .sm{color:#b3c0d0}.mddc-r{border-color:#2a3546}.mddc-f{background:#151b24;border-color:#2a3546}.mddc-f textarea{background:#0f141b;color:#e6edf5;border-color:#2a3546}.mddc-more{background:#1b2330}.mddc-webans{background:#13233a;border-color:#2a3546}}';
 var st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
 
 var btn = document.createElement("button"); btn.id = "mddcBtn";
@@ -256,19 +259,45 @@ function extHTML(q){
  return '<div class="mddc-ext"><b>'+esc(T().ext)+'</b><div class="mddc-note">'+esc(T().extnote)+'</div>'
   + extLinks(q).map(function(l){ return '<a href="'+esc(l[1])+'" target="_blank" rel="noopener">'+esc(l[0])+' ↗</a>'; }).join("") + '</div>';
 }
+function api(path, payload){
+ return fetch(API.replace(/\/+$/,"")+path, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)})
+  .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); });
+}
+function webButton(q, box){
+ if(!API){ box.insertAdjacentHTML("beforeend", extHTML(q)); return; }
+ var b = document.createElement("button"); b.className="mddc-more mddc-web"; b.textContent = T().webbtn; box.appendChild(b);
+ b.onclick = function(){ b.remove(); askWeb(q, box); };
+ box.insertAdjacentHTML("beforeend", extHTML(q));
+}
 function askWeb(q, box){
- if(!API){ box.insertAdjacentHTML("beforeend", extHTML(q)); body.scrollTop = body.scrollHeight; return; }
- var w = document.createElement("div"); w.className="mddc-note"; w.textContent = T().webwait; box.appendChild(w);
- fetch(API, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({q:q, lang:lang})})
-  .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
-  .then(function(j){
-   w.remove();
-   var html = '<div style="margin-top:6px">'+esc(j.answer||"").replace(/\n/g,"<br>")+'</div>';
+ var w = document.createElement("div"); w.className="mddc-note"; w.textContent = T().webwait; box.insertBefore(w, box.querySelector(".mddc-ext"));
+ api("/web", {q:q, lang:lang}).then(function(j){
+   var html = '<div class="mddc-webans"><b>'+esc(T().webtitle)+'</b><div style="margin-top:6px">'+esc(j.answer||"").replace(/\n/g,"<br>")+'</div>';
    if(j.sources && j.sources.length) html += '<div class="mddc-note" style="margin-top:8px"><b>'+esc(T().websrc)+'</b></div>'
      + j.sources.map(function(s){ return '<div class="mddc-r"><a class="tt" href="'+esc(s.url)+'" target="_blank" rel="noopener">'+esc(s.title||s.url)+' ↗</a></div>'; }).join("");
-   box.insertAdjacentHTML("beforeend", html + extHTML(q)); body.scrollTop = body.scrollHeight;
-  })
-  .catch(function(){ w.textContent = T().weberr; box.insertAdjacentHTML("beforeend", extHTML(q)); });
+   w.outerHTML = html + '</div>'; body.scrollTop = body.scrollHeight;
+  }).catch(function(e){ w.textContent = String(e.message)==="429" ? T().weblimit : T().weberr; });
+}
+function planFrom(p){
+ var groups = (p.concepts||[]).map(function(c){ var terms=[]; c.forEach(function(t){ t=norm(t); if(t && terms.indexOf(t)<0) terms.push(t); var g=SYNMAP[t]; if(g) g.forEach(function(x){ if(terms.indexOf(x)<0) terms.push(x); }); }); return {terms:terms, code:null, label:c[0]}; }).filter(function(g){ return g.terms.length; });
+ return {groups:groups, sections:p.sections||[], from:p.from, to:p.to};
+}
+function showResults(q, box, res, note){
+ if(res.hits.length){
+  box.insertAdjacentHTML("beforeend", '<div><b>'+esc(T().found(res.hits.length, q))+'</b>'+(note?'<div class="mddc-note">'+esc(note)+'</div>':'')+(res.partial?'<div class="mddc-note">'+esc(T().partial)+'</div>':'')+'</div>');
+  listInto(box, res.hits);
+  if(res.partial || res.hits.length < 3) webButton(q, box);
+ } else {
+  box.insertAdjacentHTML("beforeend", '<div><b>'+esc(T().none(q))+'</b></div>');
+  webButton(q, box);
+ }
+ body.scrollTop = body.scrollHeight;
+}
+function latest(box){
+ var man = window.DIGEST_MANIFEST||[], d0 = man[0], dg = (window.DIGEST_ARCHIVE||{})[d0]; if(!dg) return false;
+ var rows = corpus.filter(function(r){ return r.date && !r.tab && dg.sections.some(function(s){ return (s.items||[]).some(function(it){ return (it.url||"")===r.url && (it.title||"")===r.kt; }); }); });
+ var pri = {TOP:0,ACC:1,PSC:2,PCTC:3}; rows.sort(function(a,b){ return ((pri[a.code]==null?9:pri[a.code])-(pri[b.code]==null?9:pri[b.code])); });
+ box.insertAdjacentHTML("beforeend", '<div><b>'+esc(T().latest(d0, rows.length))+'</b></div>'); listInto(box, rows); body.scrollTop = body.scrollHeight; return true;
 }
 
 function answer(q){
@@ -277,25 +306,29 @@ function answer(q){
  add(esc(q), "me");
  if(RX_ABOUT.test(q) && !RX_HOW.test(q)){ add(ABOUT[lang]+chips([T().chips[1],T().chips[2]])); return; }
  if(RX_HOW.test(q)){ add(HOWTO[lang]+chips([T().chips[0],T().chips[2]])); return; }
- var box = add('<span class="mddc-note">'+esc(T().loading)+'</span>');
- loadAll(function(d,t){ var n=box.querySelector(".mddc-note"); if(n) n.textContent = T().loading + d + "/" + t; }).then(function(){
-  box.innerHTML = "";
-  if(RX_LATEST.test(q)){
-   var man = window.DIGEST_MANIFEST||[], d0 = man[0], dg = (window.DIGEST_ARCHIVE||{})[d0];
-   if(dg){ var rows = corpus.filter(function(r){ return r.date && !r.tab && dg.sections.some(function(s){ return (s.items||[]).some(function(it){ return (it.url||"")===r.url && (it.title||"")===r.kt; }); }); });
-    var pri = {TOP:0,ACC:1,PSC:2,PCTC:3}; rows.sort(function(a,b){ return ((pri[a.code]==null?9:pri[a.code])-(pri[b.code]==null?9:pri[b.code])); });
-    box.insertAdjacentHTML("beforeend", '<div><b>'+esc(T().latest(d0, rows.length))+'</b></div>'); listInto(box, rows); body.scrollTop = body.scrollHeight; return; }
-  }
-  var res = search(q);
-  if(res.hits.length){
-   box.insertAdjacentHTML("beforeend", '<div><b>'+esc(T().found(res.hits.length, q))+'</b>'+(res.partial?'<div class="mddc-note">'+esc(T().partial)+'</div>':'')+'</div>');
-   listInto(box, res.hits);
-   if(res.partial || res.hits.length < 3) box.insertAdjacentHTML("beforeend", extHTML(q));
-  } else {
-   box.insertAdjacentHTML("beforeend", '<div><b>'+esc(T().none(q))+'</b></div>');
-   askWeb(q, box);
-  }
-  body.scrollTop = body.scrollHeight;
+ var box = add('<span class="mddc-note">'+esc(API ? T().thinking : T().loading)+'</span>');
+ var parsed = API ? api("/parse", {q:q, lang:lang}).catch(function(){ return null; }) : Promise.resolve(null);
+ Promise.all([parsed, loadAll(function(d,t){ var n=box.querySelector(".mddc-note"); if(n && !API) n.textContent = T().loading + d + "/" + t; })]).then(function(v){
+  var p = v[0]; box.innerHTML = "";
+  if(p && p.intent==="personal"){ box.classList.add("mddc-warn"); box.textContent = T().privacy; return; }
+  if(p && p.intent==="offtopic"){ box.textContent = T().offtopic; return; }
+  if(p && p.intent==="about"){ box.innerHTML = ABOUT[lang]; return; }
+  if(p && p.intent==="howto"){ box.innerHTML = HOWTO[lang]; return; }
+  if(RX_LATEST.test(q) && latest(box)) return;
+  if(!p || !p.concepts || !p.concepts.length){ showResults(q, box, search(q)); return; }
+  var res = search(q, planFrom(p));
+  if(!res.hits.length && (p.from||p.to)){ var pl = planFrom(p); pl.from=null; pl.to=null; res = search(q, pl); }
+  if(res.hits.length < 2){ showResults(q, box, res, T().understood(p.rewrite||"")); return; }
+  var top = res.hits.slice(0, 60);
+  box.innerHTML = '<span class="mddc-note">'+esc(T().ranking)+'</span>';
+  api("/rerank", {q:q, lang:lang, items: top.map(function(r,i){ return {id:i, t:(lang==="KR"?(r.kt||r.et):(r.et||r.kt))+" ("+r.date+")"}; })}).then(function(j){
+   var order = (j.order||[]).filter(function(i){ return top[i]; }), drop = j.drop||[], used = {};
+   var ranked = order.map(function(i){ used[i]=1; return top[i]; });
+   top.forEach(function(r,i){ if(!used[i] && drop.indexOf(i)<0) ranked.push(r); });
+   var hits = ranked.concat(res.hits.slice(60));
+   if(!hits.length) hits = res.hits;
+   box.innerHTML = ""; showResults(q, box, {hits:hits, partial:res.partial}, T().understood(p.rewrite||""));
+  }).catch(function(){ box.innerHTML = ""; showResults(q, box, res, T().understood(p.rewrite||"")); });
  });
 }
 
