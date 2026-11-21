@@ -126,9 +126,12 @@ function groupsOf(q){
  });
  return groups;
 }
+var RXC = {};
 function matchTerm(text, term){
- if(/^[a-z0-9&+\- ]+$/.test(term) && term.length<=4){ // short latin terms: word boundary
-  return new RegExp("(^|[^a-z0-9])"+term.replace(/[.*+?^${}()|[\]\\&]/g,"\\$&")+"([^a-z0-9]|$)").test(text);
+ if(/^[a-z0-9&+\-. ']+$/.test(term)){ // latin terms: whole word for short ones, word start for longer ones (so "menad" does not hit "promenade")
+  var rx = RXC[term];
+  if(!rx){ var e = term.replace(/[.*+?^${}()|[\]\\&]/g,"\\$&"); rx = RXC[term] = new RegExp("(^|[^a-z0-9])"+e+(term.length<=4?"([^a-z0-9]|$)":"")); }
+  return rx.test(text);
  }
  return text.indexOf(term)>=0;
 }
@@ -334,10 +337,13 @@ function answer(q){
   if(!res.hits.length && (p.from||p.to)){ var pl = planFrom(p); pl.from=null; pl.to=null; res = search(q, pl); }
   if(!res.hits.length){ var loc = search(q); if(loc.hits.length && !loc.partial) res = loc; }
   var closest = false;
-  if(res.hits.length < 5){
-   var br = broadSearch(p), seen = {}; res.hits.forEach(function(r){ seen[r.url+"|"+r.kt]=1; });
-   br = br.filter(function(r){ return !seen[r.url+"|"+r.kt]; });
-   if(br.length){ if(!res.hits.length) closest = true; res = {hits: res.hits.concat(br), partial: res.partial}; }
+  if(res.partial || res.hits.length < 5){
+   // no story matches every key idea: mix the partial hits with the broad (closest) search and let Claude pick the closest
+   var br = broadSearch(p), seen = {}, mix = [], i = 0, A = res.hits, B = br;
+   while(mix.length < 120 && (i < A.length || i < B.length)){
+    [A[i], B[i]].forEach(function(r){ if(r && !seen[r.url+"|"+r.kt]){ seen[r.url+"|"+r.kt]=1; mix.push(r); } }); i++;
+   }
+   if(mix.length){ closest = true; res = {hits: mix, partial: false}; }
   }
   if(!res.hits.length){ showResults(q, box, res, T().understood(p.rewrite||"")); return; }
   var top = res.hits.slice(0, 60);
