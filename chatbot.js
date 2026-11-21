@@ -366,7 +366,7 @@ function answer(q){
   if(!res.hits.length){ showResults(q, box, res, T().understood(p.rewrite||"")); return; }
   var top = res.hits.slice(0, 60);
   box.innerHTML = '<span class="mddc-note">'+esc(T().ranking)+'</span>';
-  api("/rerank", {q:q, lang:lang, items: top.map(function(r,i){ var t=(lang==="KR"?(r.kt||r.et):(r.et||r.kt)), sm=(lang==="KR"?(r.ks||r.es):(r.es||r.ks))||""; return {id:i, t:t+" ("+r.date+") — "+sm.slice(0,150)}; })}).then(function(j){
+  api("/rerank", {q:q, lang:lang, hint:(p.broad||[]).slice(0,15).join(", "), items: top.map(function(r,i){ var t=(lang==="KR"?(r.kt||r.et):(r.et||r.kt)), sm=(lang==="KR"?(r.ks||r.es):(r.es||r.ks))||""; return {id:i, t:t+" ("+r.date+") — "+sm.slice(0,150)}; })}).then(function(j){
    var order = (j.order||[]).filter(function(i){ return top[i]; }), drop = j.drop||[], used = {};
    var ranked = order.map(function(i){ used[i]=1; return top[i]; });
    top.forEach(function(r,i){ if(!used[i] && drop.indexOf(i)<0) ranked.push(r); });

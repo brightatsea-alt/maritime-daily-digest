@@ -19,7 +19,7 @@ Rules:
 - intent "personal" for personal questions or anything asking for or containing personal data (names+contacts, addresses, accounts, the user's or assistant's private life). "offtopic" for non-maritime topics. "about" = purpose of the site. "howto" = how to use the site/tabs.
 - concepts: 1-4 key ideas the article MUST be about. Each concept is a list of 3-8 short lowercase surface forms: Korean and English words, abbreviations, inflections, close synonyms (e.g. ["출항정지","억류","detention","detained","detain"]). Drop filler words (뉴스, 알려줘, 최근, latest, news).
 - sections from: ${SECTIONS} (ACC accidents, PSC port state control, PCTC car carriers, WW Wallenius Wilhelmsen/EUKOR, EE energy/emissions, DIG digital, TECH technical, HR marine HR, HSEQ safety/quality, KR Korea, INS insurance, PNI P&I clubs, VET vetting, CLASS class societies, COMM commercial/chartering, GEO geopolitics, SYS systems/apps, SMGR ship managers). Only if clearly implied.
-- broad: 6-15 lowercase Korean and English words for finding the CLOSEST related articles when no article matches exactly. If the question names a specific ship, company, port or person, add its category words (ship type e.g. "car carrier","pctc","ro-ro","자동차선"; incident type e.g. "grounding","좌초","allision","접촉"; investigating body e.g. "ntsb","maib","해양안전심판원"; owner/operator or class if you know it), plus the general topic words. Never invent facts in "rewrite".
+- broad: 6-15 lowercase Korean and English words for finding the CLOSEST related articles when no article matches exactly. If the question names a specific ship, company, port or person, add its category words (ship type e.g. "car carrier","pctc","ro-ro","자동차선"; incident type e.g. "grounding","좌초","allision","접촉"; investigating body e.g. "ntsb","maib","해양안전심판원"; owner/operator or class if you know it), plus the general topic words. Infer a named ship's type from naming conventions you know (e.g. "Morning …", "Glovis …", "Höegh …", "Grand …" = car carriers / PCTC; "Maersk …", "MSC …", "Ever …" = container ships) and add those type words. Never invent facts in "rewrite".
 - from/to only when the question states a period ("지난주", "10월", "last 3 months").`;
 
 const RERANK_SYS = `Rank news items (headline + short summary) by how close they are to what the user is looking for on a maritime news site. If no item is exactly about it (e.g. the named ship is not mentioned), put the closest items first: same incident or vessel type, same investigating body, same company or port, same topic. Return ONLY JSON {"order":[ids most relevant first],"drop":[ids clearly unrelated],"exact":[ids that are exactly about the request]}. Keep every id that is at least loosely related in "order".`;
@@ -68,7 +68,7 @@ export default {
     const origin = req.headers.get("Origin") || "";
     if (req.method === "OPTIONS") return new Response(null, { headers: hdr(origin) });
     const path = new URL(req.url).pathname.replace(/\/+$/, "");
-    if (req.method === "GET" && (path === "" || path === "/health")) return out({ ok: true, key: !!env.CLAUDE_API_KEY, v: 3 }, origin);
+    if (req.method === "GET" && (path === "" || path === "/health")) return out({ ok: true, key: !!env.CLAUDE_API_KEY, v: 4 }, origin);
     if (req.method !== "POST") return out({ error: "POST only" }, origin, 405);
     if (!ORIGINS.includes(origin)) return out({ error: "origin" }, origin, 403);
     if (!env.CLAUDE_API_KEY) return out({ error: "no key" }, origin, 503);
@@ -92,8 +92,8 @@ export default {
         if (!(await count(env, "api", +(env.API_DAILY_LIMIT || 3000)))) return out({ error: "daily" }, origin, 429);
         const items = (Array.isArray(b.items) ? b.items : []).slice(0, 60).map((x) => ({ id: +x.id, t: String(x.t || "").slice(0, 320) }));
         if (!items.length) return out({ order: [] }, origin);
-        const list = items.map((x) => x.id + ": " + x.t).join("\n");
-        const d = await claude(env, { max_tokens: 1000, system: RERANK_SYS, messages: [{ role: "user", content: "Question: " + q + "\n\nHeadlines:\n" + list }] });
+        const list = items.map((x) => x.id + ": " + x.t).join("\n"), hint = String(b.hint || "").slice(0, 300);
+        const d = await claude(env, { max_tokens: 1000, system: RERANK_SYS, messages: [{ role: "user", content: "Question: " + q + (hint ? "\nSearch hints (likely category of what is asked): " + hint : "") + "\n\nItems:\n" + list }] });
         const p = json(textOf(d)) || {}, ids = new Set(items.map((x) => x.id));
         return out({ order: (p.order || []).map(Number).filter((i) => ids.has(i)), drop: (p.drop || []).map(Number).filter((i) => ids.has(i)), exact: (p.exact || []).map(Number).filter((i) => ids.has(i)) }, origin);
       }
