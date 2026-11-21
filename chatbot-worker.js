@@ -17,7 +17,7 @@ const PARSE_SYS = `You turn a user's question to a maritime news site (Maritime 
 Return ONLY JSON: {"intent":"news|about|howto|personal|offtopic","concepts":[["kr term","en term","synonym",...],...],"sections":["CODE"],"from":"YYYY-MM-DD"|null,"to":"YYYY-MM-DD"|null,"rewrite":"short search phrase"}
 Rules:
 - intent "personal" for personal questions or anything asking for or containing personal data (names+contacts, addresses, accounts, the user's or assistant's private life). "offtopic" for non-maritime topics. "about" = purpose of the site. "howto" = how to use the site/tabs.
-- concepts: 1-4 key ideas the article MUST be about. Each concept is a list of 3-10 lowercase surface forms: Korean and English words, abbreviations, inflections, close synonyms (e.g. ["출항정지","억류","detention","detained","detain"]). Drop filler words (뉴스, 알려줘, 최근, latest, news).
+- concepts: 1-4 key ideas the article MUST be about. Each concept is a list of 3-8 short lowercase surface forms: Korean and English words, abbreviations, inflections, close synonyms (e.g. ["출항정지","억류","detention","detained","detain"]). Drop filler words (뉴스, 알려줘, 최근, latest, news).
 - sections from: ${SECTIONS} (ACC accidents, PSC port state control, PCTC car carriers, WW Wallenius Wilhelmsen/EUKOR, EE energy/emissions, DIG digital, TECH technical, HR marine HR, HSEQ safety/quality, KR Korea, INS insurance, PNI P&I clubs, VET vetting, CLASS class societies, COMM commercial/chartering, GEO geopolitics, SYS systems/apps, SMGR ship managers). Only if clearly implied.
 - from/to only when the question states a period ("지난주", "10월", "last 3 months").`;
 
@@ -78,8 +78,9 @@ export default {
     try {
       if (path === "/parse") {
         if (!(await count(env, "api", +(env.API_DAILY_LIMIT || 3000)))) return out({ error: "daily" }, origin, 429);
-        const d = await claude(env, { max_tokens: 400, system: PARSE_SYS.replace("{TODAY}", today()), messages: [{ role: "user", content: q }] });
-        const p = json(textOf(d)) || {};
+        const d = await claude(env, { max_tokens: 1200, system: PARSE_SYS.replace("{TODAY}", today()), messages: [{ role: "user", content: q }] });
+        const raw = textOf(d), p = json(raw) || {};
+        if (!p.concepts) console.log("parse-unreadable", d.stop_reason, raw.slice(0, 500));
         const concepts = (Array.isArray(p.concepts) ? p.concepts : []).slice(0, 4)
           .map((c) => (Array.isArray(c) ? c : [c]).map((t) => String(t).toLowerCase().trim()).filter((t) => t && t.length <= 40).slice(0, 12)).filter((c) => c.length);
         return out({ intent: p.intent || "news", concepts, sections: (p.sections || []).filter((s) => SECTIONS.split(" ").includes(s)),
@@ -90,7 +91,7 @@ export default {
         const items = (Array.isArray(b.items) ? b.items : []).slice(0, 60).map((x) => ({ id: +x.id, t: String(x.t || "").slice(0, 160) }));
         if (!items.length) return out({ order: [] }, origin);
         const list = items.map((x) => x.id + ": " + x.t).join("\n");
-        const d = await claude(env, { max_tokens: 500, system: RERANK_SYS, messages: [{ role: "user", content: "Question: " + q + "\n\nHeadlines:\n" + list }] });
+        const d = await claude(env, { max_tokens: 800, system: RERANK_SYS, messages: [{ role: "user", content: "Question: " + q + "\n\nHeadlines:\n" + list }] });
         const p = json(textOf(d)) || {}, ids = new Set(items.map((x) => x.id));
         return out({ order: (p.order || []).map(Number).filter((i) => ids.has(i)), drop: (p.drop || []).map(Number).filter((i) => ids.has(i)) }, origin);
       }
@@ -108,6 +109,7 @@ export default {
       }
       return out({ error: "not found" }, origin, 404);
     } catch (e) {
+      console.log("worker-error", String(e.message || e).slice(0, 300));
       return out({ error: String(e.message || e).slice(0, 200) }, origin, 502);
     }
   }
