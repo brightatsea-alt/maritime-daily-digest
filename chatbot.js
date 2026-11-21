@@ -297,6 +297,29 @@ function broadSearch(p){
  out.sort(function(a,b){ return (b.s-a.s) || (b.r.date>a.r.date?1:b.r.date<a.r.date?-1:0); });
  return out.slice(0, 200).map(function(x){ return x.r; });
 }
+function scoredSearch(p, strict){
+ var groups = planFrom(p).groups, broad = [];
+ (p.broad||[]).forEach(function(t){ t = norm(t).trim(); if(t.length>=2 && broad.indexOf(t)<0) broad.push(t); var g = SYNMAP[t]; if(g) g.forEach(function(x){ if(broad.indexOf(x)<0) broad.push(x); }); });
+ var inS = {}; (strict||[]).forEach(function(r){ inS[r.url+"|"+r.kt]=1; });
+ var n = groups.length, out = [];
+ corpus.forEach(function(r){
+  var cg = 0, sc = 0;
+  groups.forEach(function(g){ var h = 0; g.terms.some(function(t){ if(matchTerm(r.head,t)){ h=3; return true; } if(matchTerm(r.hay,t)) h=Math.max(h,2); return false; }); if(h){ cg++; sc+=h; } });
+  var bh = 0; broad.forEach(function(t){ if(matchTerm(r.head,t)){ bh++; sc+=1.5; } else if(matchTerm(r.hay,t)){ bh++; sc+=1; } });
+  var key = r.url+"|"+r.kt;
+  if(inS[key]) sc += 20;
+  else if(!((n && cg >= Math.max(1, n-1)) || bh >= 2 || (cg >= 1 && bh >= 1))) return;
+  out.push({r:r, s:sc, c:cg*10+(inS[key]?100:0)+sc, b:bh*10+sc});
+ });
+ // interleave the best by key ideas and the best by related terms, so the closest stories reach Claude's ranking
+ var byC = out.slice().sort(function(a,b){ return (b.c-a.c) || (b.r.date>a.r.date?1:-1); });
+ var byB = out.slice().sort(function(a,b){ return (b.b-a.b) || (b.r.date>a.r.date?1:-1); });
+ var seen = {}, res = [];
+ for(var i=0; i<byC.length && res.length<300; i++){
+  [byC[i], byB[i]].forEach(function(x){ if(x && !seen[x.r.url+"|"+x.r.kt]){ seen[x.r.url+"|"+x.r.kt]=1; res.push(x.r); } });
+ }
+ return res;
+}
 function scope(){ var man=window.DIGEST_MANIFEST||[]; return T().scope(man.length, man[man.length-1]||'', man[0]||'', corpus?corpus.length:0); }
 function showResults(q, box, res, note){
  box.insertAdjacentHTML('beforeend','<div class="mddc-note" style="margin-bottom:4px">'+esc(scope())+'</div>');
@@ -336,15 +359,10 @@ function answer(q){
   var res = search(q, planFrom(p));
   if(!res.hits.length && (p.from||p.to)){ var pl = planFrom(p); pl.from=null; pl.to=null; res = search(q, pl); }
   if(!res.hits.length){ var loc = search(q); if(loc.hits.length && !loc.partial) res = loc; }
-  var closest = false;
-  if(res.partial || res.hits.length < 5){
-   // no story matches every key idea: mix the partial hits with the broad (closest) search and let Claude pick the closest
-   var br = broadSearch(p), seen = {}, mix = [], i = 0, A = res.hits, B = br;
-   while(mix.length < 120 && (i < A.length || i < B.length)){
-    [A[i], B[i]].forEach(function(r){ if(r && !seen[r.url+"|"+r.kt]){ seen[r.url+"|"+r.kt]=1; mix.push(r); } }); i++;
-   }
-   if(mix.length){ closest = true; res = {hits: mix, partial: false}; }
-  }
+  // candidates for Claude: strict hits first, then every story scored over all key ideas + related terms (closest matches)
+  var cand = scoredSearch(p, res.partial ? [] : res.hits), closest = res.partial || res.hits.length < 5;
+  if(!closest){ var sk = {}; res.hits.forEach(function(r){ sk[r.url+"|"+r.kt]=1; }); var extra = 0; cand = cand.filter(function(r){ if(sk[r.url+"|"+r.kt]) return true; return ++extra <= 30; }); }
+  if(cand.length){ res = {hits: cand, partial: false}; }
   if(!res.hits.length){ showResults(q, box, res, T().understood(p.rewrite||"")); return; }
   var top = res.hits.slice(0, 60);
   box.innerHTML = '<span class="mddc-note">'+esc(T().ranking)+'</span>';
@@ -352,7 +370,7 @@ function answer(q){
    var order = (j.order||[]).filter(function(i){ return top[i]; }), drop = j.drop||[], used = {};
    var ranked = order.map(function(i){ used[i]=1; return top[i]; });
    top.forEach(function(r,i){ if(!used[i] && drop.indexOf(i)<0) ranked.push(r); });
-   var hits = ranked.concat(closest ? [] : res.hits.slice(60));
+   var hits = ranked.concat(res.hits.slice(60));
    if(!hits.length) hits = top.slice(0, 10);
    var exact = (j.exact||[]).length;
    box.innerHTML = ""; showResults(q, box, {hits:hits, partial:res.partial && !closest, closest: closest && !exact}, T().understood(p.rewrite||""));
