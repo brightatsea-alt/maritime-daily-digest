@@ -15,12 +15,12 @@ try{ var sv = localStorage.getItem("mddChatLang"); if(sv==="EN"||sv==="KR") lang
 
 /* ---------- labels ---------- */
 var CATN = {TOP:["Top News","Top News"],ACC:["사고","Accidents"],PSC:["PSC","PSC"],PCTC:["PCTC","PCTC"],WW:["Wallenius","Wallenius"],EE:["에너지효율","Energy"],DIG:["디지털","Digital"],TECH:["기술팀","Technical"],HR:["Marine HR","Marine HR"],HSEQ:["HSEQ","HSEQ"],KR:["한국해운","Korea"],INS:["P&I·H&M 보험","Insurance"],PNI:["P&I 클럽","P&I Clubs"],VET:["Vetting","Vetting"],CLASS:["선급","Class"],COMM:["커머셜·용선","Commercial"],GEO:["지리이슈","Geo Issue"],TW:["TradeWinds","TradeWinds"],HOT:["LL 핫토픽","LL Hot Topics"],SYS:["System & App","System & App"],SMGR:["선박관리사","Ship Manager"]};
-var TABN = {WALWIL:["Wallenius 탭","Wallenius tab"],SHIPMGR:["선박관리사 벤치마크 탭","Ship manager benchmark tab"],KOREA:["한국 해사동향 탭","Korea maritime tab"],HRLEAD:["Marine HR·리더십·소통 탭","Marine HR & leadership tab"],HROFFICE:["HR·리더십·소통 탭","HR & leadership tab"],TONNAGE:["선복량·건조량 탭","Tonnage tab"]};
-var TABFILE = {WALWIL:"walwil.js",SHIPMGR:"shipmgr.js",KOREA:"korea.js",HRLEAD:"hrlead.js",HROFFICE:"hroffice.js",TONNAGE:"tonnage.js"};
+var TABN = {WALWIL:["Wallenius 탭","Wallenius tab"],SHIPMGR:["선박관리사 벤치마크 탭","Ship manager benchmark tab"],KOREA:["한국 해사동향 탭","Korea maritime tab"],HRLEAD:["Marine HR·리더십·소통 탭","Marine HR & leadership tab"],HROFFICE:["HR·리더십·소통 탭","HR & leadership tab"],TONNAGE:["선복량·건조량 탭","Tonnage tab"],FORECAST:["Forecast 탭","Forecast tab"]};
+var TABFILE = {WALWIL:"walwil.js",SHIPMGR:"shipmgr.js",KOREA:"korea.js",HRLEAD:"hrlead.js",HROFFICE:"hroffice.js",TONNAGE:"tonnage.js",FORECAST:"forecast.js"};
 
 var TX = {
  KR:{title:"다이제스트 도우미",sub:"사이트 뉴스·사용법 안내",ph:"예: PSC 출항정지 뉴스, 자동차선 화재, 사용법",send:"보내기",close:"닫기",open:"챗봇 열기",
-  hello:"안녕하세요. Maritime Daily Digest 도우미입니다. 지난 모든 호와 주제별 탭에서 관련 뉴스를 찾아 최대한 모두 보여드리고, 사이트의 목적과 사용 방법도 안내합니다. 개인정보나 개인적인 질문에는 답하지 않습니다.",
+  hello:"안녕하세요. Maritime Daily Digest 도우미입니다. 2026년 6월 이후 지난 모든 호와 주제별 탭 전체에서 관련 뉴스를 찾아 최대한 모두 보여드리고, 사이트의 목적과 사용 방법도 안내합니다. 개인정보나 개인적인 질문에는 답하지 않습니다.",
   chips:["이 사이트의 목적","사용 방법","오늘의 주요 뉴스","PSC 출항정지","자동차선 화재","사이버 보안","EU ETS·FuelEU","선원 리더십"],
   loading:"전체 아카이브를 불러오는 중… ",found:function(n,q){return "‘"+q+"’ 관련 뉴스 "+n+"건을 찾았습니다 (최근 순·관련도 순).";},
   partial:"모든 단어를 함께 포함한 기사가 없어, 일부 단어가 들어간 기사를 보여드립니다.",
@@ -29,9 +29,9 @@ var TX = {
   webwait:"신뢰할 수 있는 해사 매체에서 찾는 중…",weberr:"외부 검색에 실패했습니다. 아래 신뢰 매체에서 직접 확인해 주세요.",
   ext:"신뢰할 수 있는 사이트에서 찾아보기",extnote:"아래 링크는 해당 매체의 검색 결과를 새 창으로 엽니다.",
   websrc:"출처",privacy:"이 챗봇은 사이트의 해사 뉴스와 사용 방법에 대해서만 답합니다. 개인정보(이름·연락처·주소·계좌 등)나 개인적인 질문에는 답하지 않습니다. 입력하신 개인정보는 저장하거나 전송하지 않았습니다.",
-  empty:"질문을 입력해 주세요.",thinking:"질문을 이해하는 중…",ranking:"관련도 순으로 정리하는 중…",understood:function(r){return r?"이해한 질문: "+r:"";},offtopic:"이 챗봇은 해운·해사 뉴스와 사이트 사용법에 대해서만 답합니다.",webbtn:"🔎 외부 매체에서 찾기",webtitle:"신뢰할 수 있는 해사 매체 검색 결과",weblimit:"오늘의 외부 검색 한도에 도달했습니다. 아래 링크로 직접 확인해 주세요.",latest:function(d,n){return d+" 최신 호의 주요 뉴스입니다 (전체 "+n+"건 중 Top News·사고 우선).";}},
+  empty:"질문을 입력해 주세요.",scope:function(n,a,b,c){return "검색 범위: 지난 "+n+"개 호 전체("+a+" ~ "+b+") + 주제별 탭 7개, 기사 "+c.toLocaleString()+"건";},thinking:"질문을 이해하는 중…",ranking:"관련도 순으로 정리하는 중…",understood:function(r){return r?"이해한 질문: "+r:"";},offtopic:"이 챗봇은 해운·해사 뉴스와 사이트 사용법에 대해서만 답합니다.",webbtn:"🔎 외부 매체에서 찾기",webtitle:"신뢰할 수 있는 해사 매체 검색 결과",weblimit:"오늘의 외부 검색 한도에 도달했습니다. 아래 링크로 직접 확인해 주세요.",latest:function(d,n){return d+" 최신 호의 주요 뉴스입니다 (전체 "+n+"건 중 Top News·사고 우선).";}},
  EN:{title:"Digest assistant",sub:"Site news and how-to",ph:"e.g. PSC detention news, car carrier fire, how to use",send:"Send",close:"Close",open:"Open chatbot",
-  hello:"Hello. I am the Maritime Daily Digest assistant. I search every past edition and topic tab and list as many related stories as I can find, and I explain what the site is for and how to use it. I do not answer personal questions or handle personal data.",
+  hello:"Hello. I am the Maritime Daily Digest assistant. I search every past edition since June 2026 and every topic tab and list as many related stories as I can find, and I explain what the site is for and how to use it. I do not answer personal questions or handle personal data.",
   chips:["Purpose of this site","How to use","Today's top news","PSC detention","Car carrier fire","Cyber security","EU ETS / FuelEU","Seafarer leadership"],
   loading:"Loading the full archive… ",found:function(n,q){return n+" stories found for “"+q+"” (by relevance, newest first).";},
   partial:"No story contains every word, so stories matching some of the words are shown.",
@@ -40,7 +40,7 @@ var TX = {
   webwait:"Searching reliable maritime sources…",weberr:"The web search failed. Please check the reliable sources below.",
   ext:"Look it up on reliable sites",extnote:"Each link opens that outlet's search results in a new window.",
   websrc:"Sources",privacy:"This assistant only answers about the site's maritime news and how to use it. It does not answer personal questions or handle personal data (names, contacts, addresses, accounts, etc.). Nothing you typed was stored or sent.",
-  empty:"Please type a question.",thinking:"Understanding your question…",ranking:"Ranking by relevance…",understood:function(r){return r?"Understood as: "+r:"";},offtopic:"This assistant only answers about shipping and maritime news and how to use this site.",webbtn:"🔎 Search external outlets",webtitle:"Results from reliable maritime outlets",weblimit:"Today's external search limit has been reached. Please use the links below.",latest:function(d,n){return "Top stories from the latest edition, "+d+" ("+n+" items in total; Top News and accidents first).";}}
+  empty:"Please type a question.",scope:function(n,a,b,c){return "Searched: all "+n+" past editions ("+a+" to "+b+") + 7 topic tabs, "+c.toLocaleString()+" stories";},thinking:"Understanding your question…",ranking:"Ranking by relevance…",understood:function(r){return r?"Understood as: "+r:"";},offtopic:"This assistant only answers about shipping and maritime news and how to use this site.",webbtn:"🔎 Search external outlets",webtitle:"Results from reliable maritime outlets",weblimit:"Today's external search limit has been reached. Please use the links below.",latest:function(d,n){return "Top stories from the latest edition, "+d+" ("+n+" items in total; Top News and accidents first).";}}
 };
 
 var ABOUT = {
@@ -160,7 +160,8 @@ function build(){
  };
  var A = window.DIGEST_ARCHIVE || {};
  Object.keys(A).forEach(function(d){ var dg = A[d]; if(!dg||!dg.sections) return; dg.sections.forEach(function(s){ (s.items||[]).forEach(function(it){ if(!it.code) it.code = s.code; push(it,{date:d}); }); }); });
- Object.keys(TABFILE).forEach(function(k){ var T = window[k]; if(!T) return;
+ var F = window.FORECAST; if(F && F.segments) F.segments.forEach(function(sg){ (sg.evidence||[]).forEach(function(ev){ push({date:ev.date,title:ev.title,eTitle:ev.titleEN,kSum:(ev.fig?ev.fig+" — ":"")+(ev.body||""),eSum:(ev.figEN?ev.figEN+" — ":"")+(ev.bodyEN||""),url:ev.url,src:ev.src},{tab:"FORECAST"}); }); });
+ Object.keys(TABFILE).forEach(function(k){ if(k==="FORECAST") return; var T = window[k]; if(!T) return;
   (T.groups||[]).forEach(function(g){ (g.items||[]).forEach(function(it){ push(it,{tab:k,date:it.date||T.updated}); }); });
   (T.top||[]).forEach(function(it){ push({date:it.date,title:it.k,eTitle:it.e,url:it.url,tag:it.tag,tagEN:it.tagEN,src:it.src},{tab:k}); });
  });
@@ -282,7 +283,9 @@ function planFrom(p){
  var groups = (p.concepts||[]).map(function(c){ var terms=[]; c.forEach(function(t){ t=norm(t); if(t && terms.indexOf(t)<0) terms.push(t); var g=SYNMAP[t]; if(g) g.forEach(function(x){ if(terms.indexOf(x)<0) terms.push(x); }); }); return {terms:terms, code:null, label:c[0]}; }).filter(function(g){ return g.terms.length; });
  return {groups:groups, sections:p.sections||[], from:p.from, to:p.to};
 }
+function scope(){ var man=window.DIGEST_MANIFEST||[]; return T().scope(man.length, man[man.length-1]||'', man[0]||'', corpus?corpus.length:0); }
 function showResults(q, box, res, note){
+ box.insertAdjacentHTML('beforeend','<div class="mddc-note" style="margin-bottom:4px">'+esc(scope())+'</div>');
  if(res.hits.length){
   box.insertAdjacentHTML("beforeend", '<div><b>'+esc(T().found(res.hits.length, q))+'</b>'+(note?'<div class="mddc-note">'+esc(note)+'</div>':'')+(res.partial?'<div class="mddc-note">'+esc(T().partial)+'</div>':'')+'</div>');
   listInto(box, res.hits);
@@ -317,6 +320,7 @@ function answer(q){
   if(RX_LATEST.test(q) && latest(box)) return;
   if(!p || !p.concepts || !p.concepts.length){ showResults(q, box, search(q)); return; }
   var res = search(q, planFrom(p));
+  if(!res.hits.length){ var loc = search(q); if(loc.hits.length) res = loc; }
   if(!res.hits.length && (p.from||p.to)){ var pl = planFrom(p); pl.from=null; pl.to=null; res = search(q, pl); }
   if(res.hits.length < 2){ showResults(q, box, res, T().understood(p.rewrite||"")); return; }
   var top = res.hits.slice(0, 60);
