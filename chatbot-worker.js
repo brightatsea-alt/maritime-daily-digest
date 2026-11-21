@@ -1,6 +1,6 @@
 /* Maritime Daily Digest chatbot backend (Cloudflare Worker)
-   POST /parse  {q, lang}            -> question understanding (Haiku): intent, concepts (KR+EN synonyms), sections, date range
-   POST /rerank {q, lang, items}     -> relevance order of up to 60 candidate headlines (Haiku)
+   POST /parse  {q, lang}            -> question understanding (Haiku): intent, concepts (KR+EN synonyms), broad terms, sections, date range
+   POST /rerank {q, lang, items}     -> relevance / closeness order of up to 60 candidate items (Haiku)
    POST /web    {q, lang}            -> reliable-source web search, only when the user presses the button (Haiku + web_search)
    Settings → Variables and Secrets:  CLAUDE_API_KEY (Secret, entered by the owner)
    Optional: CLAUDE_MODEL (default claude-haiku-5-5), WEB_DAILY_LIMIT (default 50), API_DAILY_LIMIT (default 3000)
@@ -11,17 +11,18 @@ const DOMAINS = ["imo.org","safety4sea.com","gcaptain.com","hellenicshippingnews
   "lloydslist.com","tradewindsnews.com","rivieramm.com","seatrade-maritime.com","shipmanagementinternational.com","parismou.org",
   "tokyo-mou.org","uscg.mil","emsa.europa.eu","dnv.com","lr.org","classnk.or.jp","krs.co.kr","ics-shipping.org","bimco.org",
   "ocimf.org","rightship.com","gard.no","skuld.com","nepia.com","ukpandi.com","westpandi.com","mof.go.kr","ksg.co.kr",
-  "shippingnewsnet.com","haesanews.com","kmi.re.kr","porttechnology.org","offshore-energy.biz","marinelink.com"];
+  "shippingnewsnet.com","haesanews.com","kmi.re.kr","porttechnology.org","offshore-energy.biz","marinelink.com","ntsb.gov"];
 
 const PARSE_SYS = `You turn a user's question to a maritime news site (Maritime Daily Digest) into a search plan. Today is {TODAY}.
-Return ONLY JSON: {"intent":"news|about|howto|personal|offtopic","concepts":[["kr term","en term","synonym",...],...],"sections":["CODE"],"from":"YYYY-MM-DD"|null,"to":"YYYY-MM-DD"|null,"rewrite":"short search phrase"}
+Return ONLY JSON: {"intent":"news|about|howto|personal|offtopic","concepts":[["kr term","en term","synonym",...],...],"sections":["CODE"],"from":"YYYY-MM-DD"|null,"to":"YYYY-MM-DD"|null,"broad":["related term",...],"rewrite":"short search phrase"}
 Rules:
 - intent "personal" for personal questions or anything asking for or containing personal data (names+contacts, addresses, accounts, the user's or assistant's private life). "offtopic" for non-maritime topics. "about" = purpose of the site. "howto" = how to use the site/tabs.
 - concepts: 1-4 key ideas the article MUST be about. Each concept is a list of 3-8 short lowercase surface forms: Korean and English words, abbreviations, inflections, close synonyms (e.g. ["출항정지","억류","detention","detained","detain"]). Drop filler words (뉴스, 알려줘, 최근, latest, news).
 - sections from: ${SECTIONS} (ACC accidents, PSC port state control, PCTC car carriers, WW Wallenius Wilhelmsen/EUKOR, EE energy/emissions, DIG digital, TECH technical, HR marine HR, HSEQ safety/quality, KR Korea, INS insurance, PNI P&I clubs, VET vetting, CLASS class societies, COMM commercial/chartering, GEO geopolitics, SYS systems/apps, SMGR ship managers). Only if clearly implied.
+- broad: 6-15 lowercase Korean and English words for finding the CLOSEST related articles when no article matches exactly. If the question names a specific ship, company, port or person, add its category words (ship type e.g. "car carrier","pctc","ro-ro","자동차선"; incident type e.g. "grounding","좌초","allision","접촉"; investigating body e.g. "ntsb","maib","해양안전심판원"; owner/operator or class if you know it), plus the general topic words. Never invent facts in "rewrite".
 - from/to only when the question states a period ("지난주", "10월", "last 3 months").`;
 
-const RERANK_SYS = `Rank news headlines by how well they answer the user's question to a maritime news site. Return ONLY JSON {"order":[ids most relevant first],"drop":[ids clearly irrelevant]}. Keep every id that is at least loosely relevant in "order".`;
+const RERANK_SYS = `Rank news items (headline + short summary) by how close they are to what the user is looking for on a maritime news site. If no item is exactly about it (e.g. the named ship is not mentioned), put the closest items first: same incident or vessel type, same investigating body, same company or port, same topic. Return ONLY JSON {"order":[ids most relevant first],"drop":[ids clearly unrelated],"exact":[ids that are exactly about the request]}. Keep every id that is at least loosely related in "order".`;
 
 const WEB_SYS = {
   KR: "당신은 Maritime Daily Digest(해운·선박관리 뉴스 사이트)의 도우미입니다. 해사 관련 질문에만 답하고, 개인정보·개인적인 질문·해사와 무관한 질문은 정중히 거절합니다. 웹 검색으로 신뢰할 수 있는 해사 매체·기관의 최신 기사를 찾아, 관련 뉴스를 최대한 많이 '날짜 · 매체 — 한 줄 요약' 형식의 목록으로 보여 주세요. 확인되지 않은 내용은 추측하지 말고, 한국어로 답하세요.",
@@ -67,7 +68,7 @@ export default {
     const origin = req.headers.get("Origin") || "";
     if (req.method === "OPTIONS") return new Response(null, { headers: hdr(origin) });
     const path = new URL(req.url).pathname.replace(/\/+$/, "");
-    if (req.method === "GET" && (path === "" || path === "/health")) return out({ ok: true, key: !!env.CLAUDE_API_KEY }, origin);
+    if (req.method === "GET" && (path === "" || path === "/health")) return out({ ok: true, key: !!env.CLAUDE_API_KEY, v: 3 }, origin);
     if (req.method !== "POST") return out({ error: "POST only" }, origin, 405);
     if (!ORIGINS.includes(origin)) return out({ error: "origin" }, origin, 403);
     if (!env.CLAUDE_API_KEY) return out({ error: "no key" }, origin, 503);
@@ -84,16 +85,17 @@ export default {
         const concepts = (Array.isArray(p.concepts) ? p.concepts : []).slice(0, 4)
           .map((c) => (Array.isArray(c) ? c : [c]).map((t) => String(t).toLowerCase().trim()).filter((t) => t && t.length <= 40).slice(0, 12)).filter((c) => c.length);
         return out({ intent: p.intent || "news", concepts, sections: (p.sections || []).filter((s) => SECTIONS.split(" ").includes(s)),
-          from: p.from || null, to: p.to || null, rewrite: String(p.rewrite || "").slice(0, 120) }, origin);
+          from: p.from || null, to: p.to || null,
+          broad: (Array.isArray(p.broad) ? p.broad : []).map((t) => String(t).toLowerCase().trim()).filter((t) => t && t.length <= 40).slice(0, 20), rewrite: String(p.rewrite || "").slice(0, 120) }, origin);
       }
       if (path === "/rerank") {
         if (!(await count(env, "api", +(env.API_DAILY_LIMIT || 3000)))) return out({ error: "daily" }, origin, 429);
-        const items = (Array.isArray(b.items) ? b.items : []).slice(0, 60).map((x) => ({ id: +x.id, t: String(x.t || "").slice(0, 160) }));
+        const items = (Array.isArray(b.items) ? b.items : []).slice(0, 60).map((x) => ({ id: +x.id, t: String(x.t || "").slice(0, 320) }));
         if (!items.length) return out({ order: [] }, origin);
         const list = items.map((x) => x.id + ": " + x.t).join("\n");
-        const d = await claude(env, { max_tokens: 800, system: RERANK_SYS, messages: [{ role: "user", content: "Question: " + q + "\n\nHeadlines:\n" + list }] });
+        const d = await claude(env, { max_tokens: 1000, system: RERANK_SYS, messages: [{ role: "user", content: "Question: " + q + "\n\nHeadlines:\n" + list }] });
         const p = json(textOf(d)) || {}, ids = new Set(items.map((x) => x.id));
-        return out({ order: (p.order || []).map(Number).filter((i) => ids.has(i)), drop: (p.drop || []).map(Number).filter((i) => ids.has(i)) }, origin);
+        return out({ order: (p.order || []).map(Number).filter((i) => ids.has(i)), drop: (p.drop || []).map(Number).filter((i) => ids.has(i)), exact: (p.exact || []).map(Number).filter((i) => ids.has(i)) }, origin);
       }
       if (path === "/web") {
         if (!(await count(env, "web", +(env.WEB_DAILY_LIMIT || 50)))) return out({ error: "daily" }, origin, 429);

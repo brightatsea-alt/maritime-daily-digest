@@ -29,7 +29,7 @@ var TX = {
   webwait:"신뢰할 수 있는 해사 매체에서 찾는 중…",weberr:"외부 검색에 실패했습니다. 아래 신뢰 매체에서 직접 확인해 주세요.",
   ext:"신뢰할 수 있는 사이트에서 찾아보기",extnote:"아래 링크는 해당 매체의 검색 결과를 새 창으로 엽니다.",
   websrc:"출처",privacy:"이 챗봇은 사이트의 해사 뉴스와 사용 방법에 대해서만 답합니다. 개인정보(이름·연락처·주소·계좌 등)나 개인적인 질문에는 답하지 않습니다. 입력하신 개인정보는 저장하거나 전송하지 않았습니다.",
-  empty:"질문을 입력해 주세요.",scope:function(n,a,b,c){return "검색 범위: 지난 "+n+"개 호 전체("+a+" ~ "+b+") + 주제별 탭 7개, 기사 "+c.toLocaleString()+"건";},thinking:"질문을 이해하는 중…",ranking:"관련도 순으로 정리하는 중…",understood:function(r){return r?"이해한 질문: "+r:"";},offtopic:"이 챗봇은 해운·해사 뉴스와 사이트 사용법에 대해서만 답합니다.",webbtn:"🔎 외부 매체에서 찾기",webtitle:"신뢰할 수 있는 해사 매체 검색 결과",weblimit:"오늘의 외부 검색 한도에 도달했습니다. 아래 링크로 직접 확인해 주세요.",latest:function(d,n){return d+" 최신 호의 주요 뉴스입니다 (전체 "+n+"건 중 Top News·사고 우선).";}},
+  empty:"질문을 입력해 주세요.",closest:function(n,q){return "‘"+q+"’와 정확히 일치하는 기사는 사이트에 없습니다. 가장 근접한 기사 "+n+"건을 관련도 순으로 보여드립니다.";},scope:function(n,a,b,c){return "검색 범위: 지난 "+n+"개 호 전체("+a+" ~ "+b+") + 주제별 탭 7개, 기사 "+c.toLocaleString()+"건";},thinking:"질문을 이해하는 중…",ranking:"관련도 순으로 정리하는 중…",understood:function(r){return r?"이해한 질문: "+r:"";},offtopic:"이 챗봇은 해운·해사 뉴스와 사이트 사용법에 대해서만 답합니다.",webbtn:"🔎 외부 매체에서 찾기",webtitle:"신뢰할 수 있는 해사 매체 검색 결과",weblimit:"오늘의 외부 검색 한도에 도달했습니다. 아래 링크로 직접 확인해 주세요.",latest:function(d,n){return d+" 최신 호의 주요 뉴스입니다 (전체 "+n+"건 중 Top News·사고 우선).";}},
  EN:{title:"Digest assistant",sub:"Site news and how-to",ph:"e.g. PSC detention news, car carrier fire, how to use",send:"Send",close:"Close",open:"Open chatbot",
   hello:"Hello. I am the Maritime Daily Digest assistant. I search every past edition since June 2026 and every topic tab and list as many related stories as I can find, and I explain what the site is for and how to use it. I do not answer personal questions or handle personal data.",
   chips:["Purpose of this site","How to use","Today's top news","PSC detention","Car carrier fire","Cyber security","EU ETS / FuelEU","Seafarer leadership"],
@@ -40,7 +40,7 @@ var TX = {
   webwait:"Searching reliable maritime sources…",weberr:"The web search failed. Please check the reliable sources below.",
   ext:"Look it up on reliable sites",extnote:"Each link opens that outlet's search results in a new window.",
   websrc:"Sources",privacy:"This assistant only answers about the site's maritime news and how to use it. It does not answer personal questions or handle personal data (names, contacts, addresses, accounts, etc.). Nothing you typed was stored or sent.",
-  empty:"Please type a question.",scope:function(n,a,b,c){return "Searched: all "+n+" past editions ("+a+" to "+b+") + 7 topic tabs, "+c.toLocaleString()+" stories";},thinking:"Understanding your question…",ranking:"Ranking by relevance…",understood:function(r){return r?"Understood as: "+r:"";},offtopic:"This assistant only answers about shipping and maritime news and how to use this site.",webbtn:"🔎 Search external outlets",webtitle:"Results from reliable maritime outlets",weblimit:"Today's external search limit has been reached. Please use the links below.",latest:function(d,n){return "Top stories from the latest edition, "+d+" ("+n+" items in total; Top News and accidents first).";}}
+  empty:"Please type a question.",closest:function(n,q){return "No story on the site matches \u201c"+q+"\u201d exactly. Here are the "+n+" closest stories, most relevant first.";},scope:function(n,a,b,c){return "Searched: all "+n+" past editions ("+a+" to "+b+") + 7 topic tabs, "+c.toLocaleString()+" stories";},thinking:"Understanding your question…",ranking:"Ranking by relevance…",understood:function(r){return r?"Understood as: "+r:"";},offtopic:"This assistant only answers about shipping and maritime news and how to use this site.",webbtn:"🔎 Search external outlets",webtitle:"Results from reliable maritime outlets",weblimit:"Today's external search limit has been reached. Please use the links below.",latest:function(d,n){return "Top stories from the latest edition, "+d+" ("+n+" items in total; Top News and accidents first).";}}
 };
 
 var ABOUT = {
@@ -283,13 +283,24 @@ function planFrom(p){
  var groups = (p.concepts||[]).map(function(c){ var terms=[]; c.forEach(function(t){ t=norm(t); if(t && terms.indexOf(t)<0) terms.push(t); var g=SYNMAP[t]; if(g) g.forEach(function(x){ if(terms.indexOf(x)<0) terms.push(x); }); }); return {terms:terms, code:null, label:c[0]}; }).filter(function(g){ return g.terms.length; });
  return {groups:groups, sections:p.sections||[], from:p.from, to:p.to};
 }
+function broadSearch(p){
+ var terms = [];
+ var add = function(t){ t = norm(t).trim(); if(!t || t.length<2 || terms.indexOf(t)>=0) return; terms.push(t); };
+ (p.concepts||[]).forEach(function(c){ c.forEach(add); });
+ (p.broad||[]).forEach(function(t){ add(t); var g = SYNMAP[norm(t)]; if(g) g.forEach(add); });
+ if(!terms.length) return [];
+ var need = terms.length >= 6 ? 2 : 1, out = [];
+ corpus.forEach(function(r){ var sc = 0, hit = 0; terms.forEach(function(t){ if(matchTerm(r.head,t)){ sc+=2; hit++; } else if(matchTerm(r.hay,t)){ sc+=1; hit++; } }); if(hit>=need) out.push({r:r, s:sc}); });
+ out.sort(function(a,b){ return (b.s-a.s) || (b.r.date>a.r.date?1:b.r.date<a.r.date?-1:0); });
+ return out.slice(0, 200).map(function(x){ return x.r; });
+}
 function scope(){ var man=window.DIGEST_MANIFEST||[]; return T().scope(man.length, man[man.length-1]||'', man[0]||'', corpus?corpus.length:0); }
 function showResults(q, box, res, note){
  box.insertAdjacentHTML('beforeend','<div class="mddc-note" style="margin-bottom:4px">'+esc(scope())+'</div>');
  if(res.hits.length){
-  box.insertAdjacentHTML("beforeend", '<div><b>'+esc(T().found(res.hits.length, q))+'</b>'+(note?'<div class="mddc-note">'+esc(note)+'</div>':'')+(res.partial?'<div class="mddc-note">'+esc(T().partial)+'</div>':'')+'</div>');
+  box.insertAdjacentHTML("beforeend", '<div><b>'+esc(res.closest ? T().closest(res.hits.length, q) : T().found(res.hits.length, q))+'</b>'+(note?'<div class="mddc-note">'+esc(note)+'</div>':'')+(res.partial?'<div class="mddc-note">'+esc(T().partial)+'</div>':'')+'</div>');
   listInto(box, res.hits);
-  if(res.partial || res.hits.length < 3) webButton(q, box);
+  if(res.closest || res.partial || res.hits.length < 3) webButton(q, box);
  } else {
   box.insertAdjacentHTML("beforeend", '<div><b>'+esc(T().none(q))+'</b></div>');
   webButton(q, box);
@@ -320,19 +331,26 @@ function answer(q){
   if(RX_LATEST.test(q) && latest(box)) return;
   if(!p || !p.concepts || !p.concepts.length){ showResults(q, box, search(q)); return; }
   var res = search(q, planFrom(p));
-  if(!res.hits.length){ var loc = search(q); if(loc.hits.length) res = loc; }
   if(!res.hits.length && (p.from||p.to)){ var pl = planFrom(p); pl.from=null; pl.to=null; res = search(q, pl); }
-  if(res.hits.length < 2){ showResults(q, box, res, T().understood(p.rewrite||"")); return; }
+  if(!res.hits.length){ var loc = search(q); if(loc.hits.length && !loc.partial) res = loc; }
+  var closest = false;
+  if(res.hits.length < 5){
+   var br = broadSearch(p), seen = {}; res.hits.forEach(function(r){ seen[r.url+"|"+r.kt]=1; });
+   br = br.filter(function(r){ return !seen[r.url+"|"+r.kt]; });
+   if(br.length){ if(!res.hits.length) closest = true; res = {hits: res.hits.concat(br), partial: res.partial}; }
+  }
+  if(!res.hits.length){ showResults(q, box, res, T().understood(p.rewrite||"")); return; }
   var top = res.hits.slice(0, 60);
   box.innerHTML = '<span class="mddc-note">'+esc(T().ranking)+'</span>';
-  api("/rerank", {q:q, lang:lang, items: top.map(function(r,i){ return {id:i, t:(lang==="KR"?(r.kt||r.et):(r.et||r.kt))+" ("+r.date+")"}; })}).then(function(j){
+  api("/rerank", {q:q, lang:lang, items: top.map(function(r,i){ var t=(lang==="KR"?(r.kt||r.et):(r.et||r.kt)), sm=(lang==="KR"?(r.ks||r.es):(r.es||r.ks))||""; return {id:i, t:t+" ("+r.date+") — "+sm.slice(0,150)}; })}).then(function(j){
    var order = (j.order||[]).filter(function(i){ return top[i]; }), drop = j.drop||[], used = {};
    var ranked = order.map(function(i){ used[i]=1; return top[i]; });
    top.forEach(function(r,i){ if(!used[i] && drop.indexOf(i)<0) ranked.push(r); });
-   var hits = ranked.concat(res.hits.slice(60));
-   if(!hits.length) hits = res.hits;
-   box.innerHTML = ""; showResults(q, box, {hits:hits, partial:res.partial}, T().understood(p.rewrite||""));
-  }).catch(function(){ box.innerHTML = ""; showResults(q, box, res, T().understood(p.rewrite||"")); });
+   var hits = ranked.concat(closest ? [] : res.hits.slice(60));
+   if(!hits.length) hits = top.slice(0, 10);
+   var exact = (j.exact||[]).length;
+   box.innerHTML = ""; showResults(q, box, {hits:hits, partial:res.partial && !closest, closest: closest && !exact}, T().understood(p.rewrite||""));
+  }).catch(function(){ box.innerHTML = ""; showResults(q, box, {hits:res.hits, partial:res.partial, closest:closest}, T().understood(p.rewrite||"")); });
  });
 }
 
